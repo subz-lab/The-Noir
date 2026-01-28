@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # Elasticsearch - Search and Analytics Engine
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=soc-elk-cluster
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - soc-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Logstash - Data Processing Pipeline
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: logstash
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./data/server_logs.jsonl:/usr/share/logstash/data/server_logs.jsonl:ro
+    ports:
+      - "5000:5000/tcp"
+      - "5000:5000/udp"
+    environment:
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+    networks:
+      - soc-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  # Kibana - Visualization and Dashboard
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=kibana
+      - SERVER_HOST=0.0.0.0
+    networks:
+      - soc-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  # FastAPI Backend - SOC Intelligence Hub
+  backend:
+    build: .
+    container_name: soc-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MODEL_NAME=gpt-4
+    networks:
+      - soc-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  # React Frontend - Analyst Dashboard
+  frontend:
+    build: ./dashboard
+    container_name: soc-frontend
+    ports:
+      - "3000:80"
+    networks:
+      - soc-network
+    depends_on:
+      - backend
+
+networks:
+  soc-network:
+    driver: bridge
+
+volumes:
+  elasticsearch-data:
+    driver: local
