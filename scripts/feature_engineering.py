@@ -23,7 +23,7 @@ def perform_feature_engineering(input_csv="data/labeled_logs.csv", output_csv="d
 
     # 1. SQL Flag (Binary)
     sql_pattern = r"(?i)(OR\s+['\"]?\d|DROP\s+TABLE|UNION\s+SELECT|--|admin['\"]--|SELECT\s+\*\s+FROM|' OR '1'='1|' OR 'a'='a)"
-    df['sql_flag'] = df['request_payload'].astype(str).apply(lambda x: 1 if re.search(sql_pattern, x) else 0)
+    df['sql_flag'] = df['request_payload'].fillna('').astype(str).apply(lambda x: 1 if re.search(sql_pattern, x) else 0)
 
     # 2. Sequential Time Gaps per IP
     df['time_gap'] = df.groupby('ip_address')['timestamp'].diff().dt.total_seconds().fillna(0)

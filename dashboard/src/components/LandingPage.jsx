@@ -59,13 +59,13 @@ const LandingPage = ({ onEnter }) => {
                 <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-8 text-white/40"
+                    className="flex items-center gap-4 md:gap-8 text-white/40"
                 >
-                    <a href="#" className="nav-link">ARCHIVE</a>
-                    <a href="#" className="nav-link">NEURAL FLOW</a>
+                    <a href="#" className="nav-link hidden md:block">ARCHIVE</a>
+                    <a href="#" className="nav-link hidden md:block">NEURAL FLOW</a>
                     <MagneticButton
                         onClick={onEnter}
-                        className="px-8 py-2.5 bg-white text-black rounded-full font-bold text-xs hover:scale-105 transition-all uppercase tracking-[0.2em] premium-shadow"
+                        className="px-6 md:px-8 py-2 md:py-2.5 bg-white text-black rounded-full font-bold text-[10px] md:text-xs hover:scale-105 transition-all uppercase tracking-[0.2em] premium-shadow"
                     >
                         LAUNCH COMMAND
                     </MagneticButton>
@@ -76,7 +76,7 @@ const LandingPage = ({ onEnter }) => {
             <CinematicHero onEnter={onEnter} />
 
             {/* Feature Section with Premium Glass and Motion */}
-            <section className="relative z-10 px-8 py-24 bg-black/50">
+            <section className="relative z-10 px-6 md:px-8 py-16 md:py-24 bg-black/50">
                 <div className="max-w-7xl mx-auto">
                     <motion.div
                         initial="hidden"
@@ -121,10 +121,10 @@ const LandingPage = ({ onEnter }) => {
                         initial={{ opacity: 0, scale: 0.9 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 1.5 }}
-                        className="mt-32 text-center"
+                        className="mt-20 md:mt-32 text-center px-4"
                     >
-                        <h2 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter text-white/25 mb-20 uppercase leading-none font-outfit">
-                            "DEFENSE IS NOT<br />A REACTION, BUT<br />AN EVOLUTION."
+                        <h2 className="text-3xl md:text-6xl lg:text-7xl font-black tracking-tighter text-white/25 mb-12 md:mb-20 uppercase leading-[1.1] md:leading-none font-outfit">
+                            "DEFENSE IS NOT<br className="hidden md:block" /> A REACTION, BUT<br className="hidden md:block" /> AN EVOLUTION."
                         </h2>
 
                         <div className="flex justify-center">

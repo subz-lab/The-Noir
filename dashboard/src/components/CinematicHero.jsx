@@ -20,7 +20,7 @@ const CinematicHero = ({ onEnter }) => {
 
             for (let i = 0; i < frameCount; i++) {
                 const img = new Image();
-                img.src = `/parallax/frame_${i.toString().padStart(3, '0')}.webp`;
+                img.src = `${import.meta.env.BASE_URL}parallax/frame_${i.toString().padStart(3, '0')}.webp`;
 
                 await new Promise((resolve) => {
                     img.onload = () => {
@@ -147,7 +147,7 @@ const CinematicHero = ({ onEnter }) => {
                                 show: { opacity: 1, scale: 1, filter: "blur(0px)" }
                             }}
                             transition={{ duration: 1.5, ease: [0.23, 1, 0.32, 1] }}
-                            className="text-5xl md:text-7xl lg:text-[8rem] font-extrabold tracking-tighter leading-[0.85] mb-12 uppercase premium-gradient-text font-outfit"
+                            className="text-4xl md:text-7xl lg:text-[8rem] font-extrabold tracking-tighter leading-[0.9] md:leading-[0.85] mb-8 md:mb-12 uppercase premium-gradient-text font-outfit"
                         >
                             AUTONOMOUS<br />DEFENSE
                         </motion.h1>
@@ -158,7 +158,7 @@ const CinematicHero = ({ onEnter }) => {
                                 show: { opacity: 1, y: 0 }
                             }}
                             transition={{ duration: 1, ease: [0.23, 1, 0.32, 1] }}
-                            className="text-xl md:text-2xl text-white/50 font-normal leading-relaxed mb-16 max-w-2xl font-inter italic"
+                            className="text-lg md:text-2xl text-white/50 font-normal leading-relaxed mb-10 md:mb-16 max-w-2xl font-inter italic px-4 md:px-0"
                         >
                             The next evolution of security operations. Powered by silent intelligence, driven by autonomous neural networks.
                         </motion.p>

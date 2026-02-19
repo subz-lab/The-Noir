@@ -14,7 +14,7 @@ class MLService:
     Maintains state for rolling window feature extraction across API requests.
     """
     
-    def __init__(self, model_path="models/threat_model.pkl", metadata_path="models/model_metadata.pkl"):
+    def __init__(self, model_path="app/models/threat_model.pkl", metadata_path="app/models/model_metadata.pkl"):
         # Load model and metadata
         if not os.path.exists(model_path) or not os.path.exists(metadata_path):
             raise FileNotFoundError(f"Model files not found at {model_path} or {metadata_path}")

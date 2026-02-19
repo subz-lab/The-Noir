@@ -17,6 +17,7 @@ class ElasticsearchService:
             self.client = Elasticsearch(self.es_url)
             if not self.client.ping():
                 print(f"⚠ Warning: Could not connect to Elasticsearch at {self.es_url}")
+                self.client = None
         except Exception as e:
             print(f"Error initializing Elasticsearch client: {e}")
             self.client = None
