@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -342,6 +342,5 @@
     box-shadow: 0 0 30px rgba(245,158,11,0.1), inset 0 0 0 1px rgba(255,255,255,0.02);
 }
 
-/* JetBrains Mono font import for terminal aesthetics */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
-.font-jetbrains { font-family: 'JetBrains Mono', monospace; }
+.font-jetbrains { font-family: 'JetBrains Mono', monospace; }
+

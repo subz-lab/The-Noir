@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Target, Zap, RefreshCcw, CheckCircle, XCircle, ShieldCheck } from 'lucide-react';
+import { Target, Zap, RefreshCcw, CheckCircle, XCircle, ShieldCheck, Cpu, Brain } from 'lucide-react';
 import SentinelGrid, { SentinelSection } from '../components/SentinelGrid';
 import PageHeader from '../components/PageHeader';
+import AgentActivityFeed from '../components/AgentActivityFeed';
 import { bulkIngestLogs, ATTACK_PRESETS, fetchActionHistory } from '../api';
-
 
 const getSeverityColor = (label) => {
     const l = label?.toUpperCase();
@@ -31,7 +31,7 @@ const AttackSimulatorPage = () => {
                      setInitialHistoryCount(hist.length);
                 }
             } catch (e) {
-                console.error("Failed to load SOAR history", e);
+                // silent
             }
         };
         loadHistory();
@@ -47,6 +47,7 @@ const AttackSimulatorPage = () => {
         const preset = ATTACK_PRESETS[selected];
 
         try {
+            setProgress(60);
             const res = await bulkIngestLogs(preset.logs);
             setProgress(100);
             setResult(res.last_analysis);
@@ -64,7 +65,7 @@ const AttackSimulatorPage = () => {
     const recentActions = actionHistory.slice(0, Math.max(0, actionHistory.length - initialHistoryCount) || 5);
 
     return (
-        <div className="w-full animate-in fade-in zoom-in-95 duration-500">
+        <div className="w-full animate-in fade-in zoom-in-95 duration-500 space-y-6">
             <PageHeader
                 icon={Target}
                 iconColor="#F59E0B"
@@ -72,30 +73,30 @@ const AttackSimulatorPage = () => {
                 subtitle="Inject synthetic attack vectors · Test ML classification · Trigger SOAR"
             />
 
-            <SentinelGrid className="mb-8">
-                <SentinelSection id="attack-vectors" colSpan="col-span-12" title="Select Attack Vector">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-2">
+            <SentinelGrid className="mb-0">
+                <SentinelSection id="attack-vectors" colSpan="col-span-12" title="Select Attack Vector Preset">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-2">
                         {Object.entries(ATTACK_PRESETS).map(([key, preset]) => (
                             <button
                                 key={key}
                                 onClick={() => { setSelected(key); setStatus('idle'); setResult(null); }}
-                                className={`p-8 rounded-3xl text-left border transition-all ${selected === key
-                                    ? 'bg-gradient-to-br from-white to-white/90 border-transparent text-black shadow-[0_0_40px_rgba(255,255,255,0.2)]'
-                                    : 'bg-white/5 border-white/10 hover:border-white/30 text-white'
+                                className={`p-6 rounded-2xl text-left border transition-all ${selected === key
+                                    ? 'bg-gradient-to-br from-white to-white/90 border-transparent text-black shadow-[0_0_30px_rgba(255,255,255,0.2)]'
+                                    : 'bg-white/5 border-white/10 hover:border-white/25 text-white'
                                     }`}
                             >
-                                <div className="flex items-center gap-4 mb-4">
-                                    <div className={`p-3 rounded-2xl ${selected === key ? 'bg-black/10' : 'bg-orange-500/10'}`}>
-                                        <Zap className={`w-6 h-6 ${selected === key ? 'text-black' : 'text-orange-400'}`} />
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className={`p-2.5 rounded-xl ${selected === key ? 'bg-black/10' : 'bg-orange-500/10'}`}>
+                                        <Zap className={`w-5 h-5 ${selected === key ? 'text-black' : 'text-orange-400'}`} />
                                     </div>
-                                    <span className="font-black text-lg uppercase tracking-tight">{preset.label}</span>
+                                    <span className="font-black text-base uppercase tracking-tight">{preset.label}</span>
                                 </div>
-                                <p className={`text-sm leading-relaxed ${selected === key ? 'text-black/60' : 'text-white/40'}`}>
+                                <p className={`text-xs leading-relaxed ${selected === key ? 'text-black/70' : 'text-white/40'}`}>
                                     {preset.description}
                                 </p>
-                                <div className="mt-6 flex items-center gap-2">
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase ${selected === key ? 'bg-black/10 text-black/60' : 'bg-white/10 text-white/50'}`}>
-                                        {preset.logs.length} Log Payload
+                                <div className="mt-4 flex items-center gap-2">
+                                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black tracking-widest uppercase ${selected === key ? 'bg-black/10 text-black/70' : 'bg-white/10 text-white/50'}`}>
+                                        {preset.logs.length} Log Payloads
                                     </span>
                                 </div>
                             </button>
@@ -104,139 +105,151 @@ const AttackSimulatorPage = () => {
                 </SentinelSection>
             </SentinelGrid>
 
-            <SentinelGrid>
-                <SentinelSection id="execution-panel" colSpan="col-span-12 lg:col-span-8" title="Execution & Telemetry Result">
-                    <div className="flex flex-col gap-6 p-2">
-                        {/* Run Button */}
-                        <button
-                            onClick={runAttack}
-                            disabled={status === 'running'}
-                            className="w-full py-6 rounded-[2rem] bg-gradient-to-r from-orange-500 to-rose-600 text-white font-black uppercase tracking-widest text-lg hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-4 shadow-[0_0_40px_rgba(249,115,22,0.3)]"
-                        >
-                            {status === 'running' ? (
-                                <>
-                                    <RefreshCcw className="w-5 h-5 animate-spin" />
-                                    Injecting Payload... {progress}%
-                                </>
-                            ) : (
-                                <>
-                                    <Target className="w-5 h-5" />
-                                    Launch Neural Attack
-                                </>
-                            )}
-                        </button>
-
-                        {/* Progress Bar */}
-                        {status === 'running' && (
-                            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                                <motion.div
-                                    animate={{ width: `${progress}%` }}
-                                    className="h-full bg-orange-400 rounded-full"
-                                    transition={{ duration: 0.2 }}
-                                />
-                            </div>
-                        )}
-
-                        {/* Result Panel */}
-                        <AnimatePresence>
-                            {result && status === 'done' && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mt-4 p-8 rounded-[2rem] border border-emerald-500/20 bg-emerald-500/5 space-y-6"
+            {/* Launch & Telemetry & Multi-Agent Collaboration */}
+            <div className="grid grid-cols-12 gap-6">
+                {/* Left: Execution & Telemetry Result */}
+                <div className="col-span-12 lg:col-span-7">
+                    <SentinelGrid>
+                        <SentinelSection id="execution-panel" colSpan="col-span-12" title="Attack Execution & Pipeline Telemetry">
+                            <div className="flex flex-col gap-5 p-2">
+                                <button
+                                    onClick={runAttack}
+                                    disabled={status === 'running'}
+                                    className="w-full py-5 rounded-2xl bg-gradient-to-r from-orange-500 to-rose-600 text-white font-black uppercase tracking-widest text-base hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(249,115,22,0.3)]"
                                 >
-                                    <div className="flex items-center gap-4 border-b border-emerald-500/20 pb-4">
-                                        <CheckCircle className="w-6 h-6 text-emerald-400" />
-                                        <span className="font-black text-emerald-400 uppercase tracking-widest text-sm">Response Received / Neural Defense Engaged</span>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div className="p-6 rounded-2xl bg-[#020204]/50 border border-white/5">
-                                            <p className="text-[10px] text-white/30 uppercase tracking-widest mb-2">Classification</p>
-                                            <p className={`text-3xl font-black ${getSeverityColor(result.label).split(' ')[0]}`}>{result.label || 'Unknown'}</p>
-                                        </div>
-                                        <div className="p-6 rounded-2xl bg-[#020204]/50 border border-white/5">
-                                            <p className="text-[10px] text-white/30 uppercase tracking-widest mb-2">AI Confidence</p>
-                                            <p className="text-3xl font-black text-white">{((result.confidence || 0) * 100).toFixed(1)}%</p>
-                                        </div>
-                                        <div className="p-6 rounded-2xl bg-[#020204]/50 border border-white/5">
-                                            <p className="text-[10px] text-white/30 uppercase tracking-widest mb-2">Severity Index</p>
-                                            <p className="text-3xl font-black text-white">{result.severity_index ?? '—'} <span className="text-lg text-white/30">/ 2</span></p>
-                                        </div>
-                                    </div>
-                                    {result.features && (
-                                        <div className="pt-6 border-t border-emerald-500/10">
-                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                                {Object.entries(result.features).map(([k, v]) => (
-                                                    <div key={k} className="flex flex-col justify-between py-2 px-4 bg-white/5 rounded-xl border border-white/5">
-                                                        <span className="text-white/40 font-mono text-xs truncate" title={k}>{k.replace(/_/g, ' ')}</span>
-                                                        <span className="text-white/90 font-bold mt-1">{typeof v === 'number' ? v.toFixed(2) : String(v)}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
+                                    {status === 'running' ? (
+                                        <>
+                                            <RefreshCcw className="w-5 h-5 animate-spin" />
+                                            Simulating Pipeline Execution...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Target className="w-5 h-5" />
+                                            Launch Attack Simulation
+                                        </>
                                     )}
-                                </motion.div>
-                            )}
+                                </button>
 
-                            {status === 'error' && result?.error && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mt-4 p-8 rounded-[2rem] border border-rose-500/20 bg-rose-500/10 flex items-start gap-4"
-                                >
-                                    <XCircle className="w-6 h-6 text-rose-400 flex-shrink-0 mt-1" />
-                                    <div>
-                                        <p className="text-lg font-bold text-rose-400">Simulation Failed</p>
-                                        <p className="text-sm text-rose-400/60 mt-2">{result.error}</p>
-                                        <p className="text-xs text-white/40 mt-4 leading-relaxed max-w-lg">Make sure the FastAPI backend is running and the ML endpoint is active.</p>
+                                {status === 'running' && (
+                                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                        <motion.div
+                                            animate={{ width: `${progress}%` }}
+                                            className="h-full bg-orange-400 rounded-full"
+                                            transition={{ duration: 0.2 }}
+                                        />
                                     </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </SentinelSection>
+                                )}
 
-                <SentinelSection id="live-soar-responses" colSpan="col-span-12 lg:col-span-4" title="Live SOAR Responses">
-                     <div className="h-[400px] overflow-y-auto pr-2 custom-scrollbar p-2">
-                         {status === 'idle' && recentActions.length === 0 ? (
-                             <div className="flex h-full items-center justify-center text-center text-white/30 flex-col gap-3">
-                                <ShieldCheck className="w-8 h-8 text-white/20" />
-                                <span className="text-sm">Standing by for attacks.<br/>SOAR playbooks will execute automatically if triggered.</span>
-                             </div>
-                         ) : recentActions.length === 0 ? (
-                              <div className="flex h-full items-center justify-center text-center text-white/30">
-                                <span className="text-sm">No SOAR actions triggered by recent simulation. (Ensure active playbooks match the generated threat).</span>
-                             </div>
-                         ) : (
-                             <div className="space-y-3">
-                                 <AnimatePresence>
-                                     {recentActions.map((log) => (
-                                         <motion.div 
-                                            key={log.id} 
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl"
+                                <AnimatePresence>
+                                    {result && status === 'done' && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 15 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 space-y-5"
                                         >
-                                             <div className="flex items-center gap-3 mb-2">
-                                                 <div className="p-1.5 rounded-lg bg-emerald-500/20">
-                                                     <Zap className="w-4 h-4 text-emerald-400" />
-                                                 </div>
-                                                 <span className="text-xs font-bold text-white uppercase tracking-widest">{log.action_type.replace('_', ' ')}</span>
-                                             </div>
-                                             <p className="text-xs text-emerald-400/80 leading-relaxed font-mono">
-                                                 {log.details}
-                                             </p>
-                                             <div className="mt-3 text-[10px] text-white/40 text-right italic border-t border-emerald-500/10 pt-2">
-                                                 {new Date(log.timestamp).toLocaleTimeString()}
-                                             </div>
-                                         </motion.div>
-                                     ))}
-                                 </AnimatePresence>
-                             </div>
-                         )}
-                     </div>
-                </SentinelSection>
-            </SentinelGrid>
+                                            <div className="flex items-center gap-3 border-b border-emerald-500/20 pb-3">
+                                                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                                                <span className="font-black text-emerald-400 uppercase tracking-widest text-xs">
+                                                    Neural Classification & Orchestration Complete
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <div className="p-4 rounded-xl bg-[#020204]/60 border border-white/5">
+                                                    <p className="text-[8px] text-white/30 uppercase tracking-widest mb-1">Classification</p>
+                                                    <p className={`text-xl font-black ${getSeverityColor(result.label).split(' ')[0]}`}>{result.label || 'Unknown'}</p>
+                                                </div>
+                                                <div className="p-4 rounded-xl bg-[#020204]/60 border border-white/5">
+                                                    <p className="text-[8px] text-white/30 uppercase tracking-widest mb-1">AI Confidence</p>
+                                                    <p className="text-xl font-black text-white">{((result.confidence || 0) * 100).toFixed(1)}%</p>
+                                                </div>
+                                                <div className="p-4 rounded-xl bg-[#020204]/60 border border-white/5">
+                                                    <p className="text-[8px] text-white/30 uppercase tracking-widest mb-1">Severity Index</p>
+                                                    <p className="text-xl font-black text-white">{result.severity_index ?? '—'} <span className="text-xs text-white/30">/ 2</span></p>
+                                                </div>
+                                            </div>
+                                            {result.features && (
+                                                <div className="pt-4 border-t border-emerald-500/10">
+                                                    <p className="text-[9px] font-mono text-white/30 uppercase tracking-widest mb-2">Extracted Feature Vectors</p>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {Object.entries(result.features).map(([k, v]) => (
+                                                            <div key={k} className="flex justify-between items-center py-2 px-3 bg-white/5 rounded-lg border border-white/5">
+                                                                <span className="text-white/40 font-mono text-[10px] truncate">{k.replace(/_/g, ' ')}</span>
+                                                                <span className="text-white/90 font-mono text-xs font-bold">{typeof v === 'number' ? v.toFixed(2) : String(v)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    )}
+
+                                    {status === 'error' && result?.error && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="p-6 rounded-2xl border border-rose-500/20 bg-rose-500/10 flex items-start gap-3"
+                                        >
+                                            <XCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm font-bold text-rose-400">Simulation Error</p>
+                                                <p className="text-xs text-rose-400/70 mt-1">{result.error}</p>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </SentinelSection>
+                    </SentinelGrid>
+                </div>
+
+                {/* Right: Real-time Multi-Agent Activity Feed (GAP C) + Live SOAR Responses */}
+                <div className="col-span-12 lg:col-span-5 space-y-6">
+                    {/* Live Agent Collaboration Feed */}
+                    <SentinelGrid>
+                        <SentinelSection id="agent-activity-feed" colSpan="col-span-12" title="Collaborative Multi-Agent Flow">
+                            <div className="h-[280px]">
+                                <AgentActivityFeed isRunning={status === 'running'} />
+                            </div>
+                        </SentinelSection>
+                    </SentinelGrid>
+
+                    {/* Live SOAR Execution Log */}
+                    <SentinelGrid>
+                        <SentinelSection id="live-soar-responses" colSpan="col-span-12" title="Automated SOAR Execution">
+                            <div className="h-[240px] overflow-y-auto pr-1 hide-scrollbar p-1">
+                                {recentActions.length === 0 ? (
+                                    <div className="flex h-full items-center justify-center text-center text-white/20 flex-col gap-2">
+                                        <ShieldCheck className="w-7 h-7 text-white/10" />
+                                        <span className="text-xs font-mono">Standing by. Playbooks auto-execute on high threat scores.</span>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <AnimatePresence>
+                                            {recentActions.map((log) => (
+                                                <motion.div 
+                                                    key={log.id} 
+                                                    initial={{ opacity: 0, x: 10 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start gap-2.5"
+                                                >
+                                                    <div className="p-1 rounded-lg bg-emerald-500/20 mt-0.5">
+                                                        <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className="text-[10px] font-bold text-white uppercase tracking-wider block">{log.action_type?.replace(/_/g, ' ')}</span>
+                                                        <p className="text-[10px] text-emerald-400/80 font-mono mt-0.5 truncate">{log.details}</p>
+                                                    </div>
+                                                    <span className="text-[8px] text-white/30 font-mono flex-shrink-0">{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}</span>
+                                                </motion.div>
+                                            ))}
+                                        </AnimatePresence>
+                                    </div>
+                                )}
+                            </div>
+                        </SentinelSection>
+                    </SentinelGrid>
+                </div>
+            </div>
         </div>
     );
 };

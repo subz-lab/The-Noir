@@ -9,6 +9,7 @@ from app.services.ml_service import get_ml_service, MLService
 from app.services.elasticsearch_service import get_es_service, ElasticsearchService
 from app.services.buffer_service import get_buffer_service, BufferService
 from app.services.soar_service import soar_service
+from app.agents.orchestrator import get_orchestrator
 
 router = APIRouter()
 
@@ -136,6 +137,8 @@ async def bulk_ingest_logs(
     if enriched_logs:
         # Abstracted batch saving
         buffer_service.add_batch(enriched_logs)
+        # Auto-trigger Agentic SOC Orchestrator Pipeline
+        background_tasks.add_task(get_orchestrator().process_logs, [l.model_dump() for l in request.logs])
             
     if results:
         await buffer_service.manager.broadcast({

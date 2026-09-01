@@ -6,6 +6,9 @@ import Skeleton from '../components/Skeleton';
 import PageHeader from '../components/PageHeader';
 import { generateReport } from '../api';
 
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+
 const sev = (label) => {
     const l = label?.toUpperCase();
     if (l === 'THREAT' || l === 'CRITICAL') return { text: 'text-rose-400', border: 'border-rose-500/20', bg: 'bg-rose-500/10' };
@@ -130,9 +133,20 @@ const ReportsPage = ({ incidents = [], logs = [], isLoading, onRefresh }) => {
                                             <p className="text-[10px] font-mono text-white/30 mt-0.5">{selectedReport.report_id}</p>
                                         </div>
                                     </div>
-                                    <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${c.bg} ${c.border} ${c.text}`}>
-                                        {selectedReport.severity_label}
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${c.bg} ${c.border} ${c.text}`}>
+                                            {selectedReport.severity_label}
+                                        </span>
+                                        <a
+                                            href={`${BASE_URL}/api/reports/${selectedReport.report_id}/download`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-black text-[9px] font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+                                        >
+                                            <Download className="w-3 h-3" />
+                                            Download
+                                        </a>
+                                    </div>
                                 </div>
 
                                 {/* Markdown content */}
