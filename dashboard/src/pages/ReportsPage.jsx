@@ -20,6 +20,13 @@ const ReportsPage = ({ incidents = [], logs = [], isLoading, onRefresh }) => {
     const [selectedReport, setSelectedReport] = useState(null);
     const [generating, setGenerating] = useState(false);
 
+    // Auto-select latest report on load or when new reports arrive
+    React.useEffect(() => {
+        if (incidents.length > 0 && !selectedReport) {
+            setSelectedReport(incidents[0]);
+        }
+    }, [incidents, selectedReport]);
+
     const handleGenerate = async () => {
         setGenerating(true);
         try {

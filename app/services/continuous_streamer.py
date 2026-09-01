@@ -2,8 +2,8 @@
 Continuous Live Log Streamer — Autonomous Background Telemetry Engine
 
 Continuously generates and streams realistic enterprise security telemetry
-into the ML classification pipeline, event correlation engine, and WebSocket broadcaster.
-Runs asynchronously in the background so data flows non-stop into the dashboard.
+into the ML classification pipeline, event correlation engine, automated AI report generator,
+and WebSocket broadcaster. Runs asynchronously in the background so data flows non-stop into the dashboard.
 """
 
 import asyncio
@@ -14,9 +14,11 @@ from typing import Any, Dict, List, Optional
 from app.core.logger import app_logger
 from app.services.buffer_service import get_buffer_service
 from app.services.correlation_service import get_correlation_service
+from app.services.llm_service import get_llm_service
 from app.services.ml_service import get_ml_service
 from app.services.normalizer_service import get_normalizer_service
 from app.services.soar_service import soar_service
+from app.services.storage_service import get_storage_service
 
 
 # ──────────────────────────────────────────────────────────────────────────── #
@@ -52,7 +54,8 @@ COMMON_ENDPOINTS = [
 
 class ContinuousTelemetryStreamer:
     """
-    Background worker that produces continuous real-time security events.
+    Background worker that produces continuous real-time security events,
+    triggers ML detection, runs correlation, auto-generates AI reports, and broadcasts live.
     """
 
     def __init__(self):
@@ -61,6 +64,8 @@ class ContinuousTelemetryStreamer:
         self._delay: float = 2.0  # seconds between events
         self._total_streamed: int = 0
         self._threats_streamed: int = 0
+        self._reports_generated: int = 0
+        self._last_report_time: float = 0.0
 
     @property
     def is_running(self) -> bool:
@@ -72,6 +77,7 @@ class ContinuousTelemetryStreamer:
             "delay_seconds": self._delay,
             "total_streamed": self._total_streamed,
             "threats_streamed": self._threats_streamed,
+            "reports_generated": self._reports_generated,
         }
 
     def start(self, delay: float = 2.0) -> bool:
@@ -157,6 +163,28 @@ class ContinuousTelemetryStreamer:
                 "request_payload": "POST /api/v1/auth/token invalid_grant",
             }
 
+    async def _auto_generate_report(self, log_entry: Dict, ml_result: Dict, buffer_svc: Any) -> None:
+        """Asynchronously compiles and stores an AI forensic incident report."""
+        try:
+            llm_svc = get_llm_service()
+            storage_svc = get_storage_service()
+            sev_data = llm_svc.calculate_severity(ml_result, log_entry)
+            markdown_report = await llm_svc.generate_incident_report(log_entry, ml_result, sev_data)
+            report_id = storage_svc.save_incident_report(log_entry, ml_result, sev_data, markdown_report)
+            if report_id:
+                self._reports_generated += 1
+                await buffer_svc.manager.broadcast({
+                    "type": "NEW_REPORT",
+                    "report_id": report_id,
+                    "severity_label": sev_data.get("label"),
+                    "source_ip": log_entry.get("ip_address"),
+                    "event_type": log_entry.get("event_type"),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                })
+                app_logger.info(f"[Continuous Streamer] Auto-generated & broadcasted forensic report: {report_id}")
+        except Exception as exc:
+            app_logger.warning(f"[Continuous Streamer] Auto report error: {exc}")
+
     async def _stream_loop(self) -> None:
         """Main async generator loop."""
         buffer_svc = get_buffer_service()
@@ -184,7 +212,7 @@ class ContinuousTelemetryStreamer:
 
                 # 4. Ingest into Correlation Service
                 corr_svc.ingest(enriched)
-                corr_svc.correlate_recent(window_seconds=300)
+                new_incidents = corr_svc.correlate_recent(window_seconds=300)
 
                 # 5. Broadcast to Connected WebSocket Dashboard Clients
                 await buffer_svc.manager.broadcast({"type": "NEW_LOG", "log": enriched})
@@ -194,6 +222,12 @@ class ContinuousTelemetryStreamer:
                     self._threats_streamed += 1
                     soar_service.check_and_trigger_playbooks(enriched)
 
+                    # 7. Auto-generate AI Forensic Incident Report (cooldown 10s)
+                    now_ts = asyncio.get_event_loop().time()
+                    if now_ts - self._last_report_time > 10.0:
+                        self._last_report_time = now_ts
+                        asyncio.create_task(self._auto_generate_report(raw_log, prediction, buffer_svc))
+
                 self._total_streamed += 1
 
             except asyncio.CancelledError:
@@ -201,7 +235,7 @@ class ContinuousTelemetryStreamer:
             except Exception as exc:
                 app_logger.warning(f"[Continuous Streamer] Loop error: {exc}")
 
-            # Sleep between events (jitter ±0.5s for natural traffic feel)
+            # Sleep between events (jitter ±0.4s for natural traffic feel)
             jitter = random.uniform(-0.4, 0.4)
             sleep_time = max(0.6, self._delay + jitter)
             await asyncio.sleep(sleep_time)

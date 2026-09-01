@@ -70,14 +70,23 @@ const Dashboard = ({ onExit }) => {
         let ws;
         try {
             ws = subscribeToLogs((msg) => {
-                if (msg.type === 'NEW_LOG') setLogs(prev => [msg.log, ...prev].slice(0, 40));
-                else if (msg.type === 'BULK_LOGS') loadDemoData();
+                if (msg.type === 'NEW_LOG') {
+                    setLogs(prev => [msg.log, ...prev].slice(0, 40));
+                } else if (msg.type === 'BULK_LOGS' || msg.type === 'NEW_REPORT' || msg.type === 'NEW_INCIDENT') {
+                    loadDemoData();
+                }
             });
         } catch (e) {
             console.warn("WS Subscription failed:", e);
         }
 
-        return () => ws?.close?.();
+        // Periodic telemetry & report synchronization
+        const syncInterval = setInterval(loadDemoData, 6000);
+
+        return () => {
+            ws?.close?.();
+            clearInterval(syncInterval);
+        };
     }, [loadDemoData]);
 
     return (
