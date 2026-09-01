@@ -1,9 +1,9 @@
 import os
 from elasticsearch import Elasticsearch
-from dotenv import load_dotenv
 from typing import List, Dict, Any
 
-load_dotenv()
+from app.core.config import settings
+from app.core.logger import app_logger
 
 class ElasticsearchService:
     """
@@ -11,15 +11,17 @@ class ElasticsearchService:
     """
     
     def __init__(self):
-        self.es_url = os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
-        self.index_name = os.getenv("ES_LOG_INDEX", "server-logs-*")
+        self.es_url = settings.ELASTICSEARCH_URL
+        self.index_name = settings.ES_LOG_INDEX
         try:
             self.client = Elasticsearch(self.es_url)
             if not self.client.ping():
-                print(f"⚠ Warning: Could not connect to Elasticsearch at {self.es_url}")
+                app_logger.warning(f"Could not reach Elasticsearch ping destination at {self.es_url}. Operating in Memory Buffer failover.")
                 self.client = None
+            else:
+                app_logger.info(f"Successfully connected to Elasticsearch node at {self.es_url}")
         except Exception as e:
-            print(f"Error initializing Elasticsearch client: {e}")
+            app_logger.error(f"Error initializing Elasticsearch telemetry hook: {e}", exc_info=True)
             self.client = None
 
     def get_latest_logs(self, limit: int = 100) -> List[Dict[str, Any]]:
@@ -40,7 +42,7 @@ class ElasticsearchService:
             hits = response['hits']['hits']
             return [hit['_source'] for hit in hits]
         except Exception as e:
-            print(f"Error searching Elasticsearch: {e}")
+            app_logger.error(f"Error querying Elasticsearch block (get_latest_logs): {e}", exc_info=True)
             return []
 
     def get_logs_by_ip(self, ip_address: str, limit: int = 50) -> List[Dict[str, Any]]:
@@ -61,7 +63,7 @@ class ElasticsearchService:
             hits = response['hits']['hits']
             return [hit['_source'] for hit in hits]
         except Exception as e:
-            print(f"Error searching logs by IP: {e}")
+            app_logger.error(f"Error searching logs by targeted IP stream: {e}", exc_info=True)
             return []
 
 # Singleton instance

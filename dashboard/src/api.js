@@ -92,6 +92,80 @@ export async function generateReport(logData, mlResult) {
     return res.json(); // { report_id, severity, markdown }
 }
 
+// ─── Dashboard Aggregated Data ───────────────────────────────────────────────
+
+export async function fetchSystemHealth() {
+    const res = await fetch(`${BASE_URL}/api/dashboard/system-health`);
+    if (!res.ok) throw new Error(`Failed to fetch system health: ${res.status}`);
+    return res.json();
+}
+
+export async function fetchTimeline() {
+    const res = await fetch(`${BASE_URL}/api/dashboard/timeline`);
+    if (!res.ok) throw new Error(`Failed to fetch timeline: ${res.status}`);
+    return res.json();
+}
+
+export async function fetchPlaybooks() {
+    const res = await fetch(`${BASE_URL}/api/dashboard/playbooks`);
+    if (!res.ok) throw new Error(`Failed to fetch playbooks: ${res.status}`);
+    return res.json();
+}
+
+export async function fetchInsights() {
+    const res = await fetch(`${BASE_URL}/api/dashboard/insights`);
+    if (!res.ok) throw new Error(`Failed to fetch insights: ${res.status}`);
+    return res.json();
+}
+
+export async function fetchTopology() {
+    const res = await fetch(`${BASE_URL}/api/dashboard/topology`);
+    if (!res.ok) throw new Error(`Failed to fetch topology: ${res.status}`);
+    return res.json();
+}
+
+// ─── SOAR (Automation & Playbooks) ─────────────────────────────────────────────
+
+export async function fetchSOARPlaybooks() {
+    const res = await fetch(`${BASE_URL}/api/soar/playbooks`);
+    if (!res.ok) throw new Error(`Failed to fetch SOAR playbooks: ${res.status}`);
+    return res.json();
+}
+
+export async function createSOARPlaybook(playbookData) {
+    const res = await fetch(`${BASE_URL}/api/soar/playbooks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(playbookData),
+    });
+    if (!res.ok) throw new Error(`Failed to create playbook: ${res.status}`);
+    return res.json();
+}
+
+export async function deleteSOARPlaybook(playbookId) {
+    const res = await fetch(`${BASE_URL}/api/soar/playbooks/${playbookId}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) throw new Error(`Failed to delete playbook: ${res.status}`);
+    return res.json();
+}
+
+export async function fetchActionHistory(limit = 50) {
+    const res = await fetch(`${BASE_URL}/api/soar/actions/history?limit=${limit}`);
+    if (!res.ok) throw new Error(`Failed to fetch action history: ${res.status}`);
+    return res.json();
+}
+
+export async function executePlaybook(playbookId, incidentData) {
+    const res = await fetch(`${BASE_URL}/api/soar/playbooks/${playbookId}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(incidentData),
+    });
+    if (!res.ok) throw new Error(`Failed to execute playbook: ${res.status}`);
+    return res.json();
+}
+
 // ─── Attack Simulation Payloads ───────────────────────────────────────────────
 
 export const ATTACK_PRESETS = {

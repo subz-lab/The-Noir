@@ -1,35 +1,50 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 
-const GlassCard = ({ children, className = "", delay = 0 }) => {
-    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-    const handleMouseMove = (e) => {
-        const { left, top } = e.currentTarget.getBoundingClientRect();
-        setMousePos({ x: e.clientX - left, y: e.clientY - top });
-    };
-
+/**
+ * Modular GlassCard component for SaaS platforms.
+ * Supports title, actions, and custom depth.
+ */
+const GlassCard = ({
+    children,
+    title,
+    subtitle,
+    actions,
+    className = "",
+    depth = 0
+}) => {
     return (
         <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] }}
-            onMouseMove={handleMouseMove}
-            className={`glass-card relative group overflow-hidden ${className}`}
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`saas-card flex flex-col ${className}`}
+            style={{
+                transform: `translateZ(${depth}px)`,
+                transition: 'transform 0.4s var(--ease-out-expo)'
+            }}
         >
-            {/* Spotlight Effect */}
-            <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                style={{
-                    background: `radial-gradient(400px circle at ${mousePos.x}px ${mousePos.y}px, rgba(255,255,255,0.06), transparent 80%)`
-                }}
-            />
-
-            {/* Inner Sheen */}
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
-
-            <div className="relative z-10">
+            {(title || actions) && (
+                <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
+                    <div>
+                        {title && (
+                            <h3 className="text-sm font-bold text-white tracking-tight leading-none uppercase font-outfit">
+                                {title}
+                            </h3>
+                        )}
+                        {subtitle && (
+                            <p className="text-[10px] text-white/30 font-black mt-1.5 uppercase tracking-widest italic">
+                                {subtitle}
+                            </p>
+                        )}
+                    </div>
+                    {actions && (
+                        <div className="flex items-center gap-2">
+                            {actions}
+                        </div>
+                    )}
+                </div>
+            )}
+            <div className="flex-1 overflow-hidden">
                 {children}
             </div>
         </motion.div>

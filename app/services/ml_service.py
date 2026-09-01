@@ -8,23 +8,34 @@ from datetime import datetime, timedelta
 from collections import defaultdict, deque
 from typing import Dict, Any, Optional
 
+from app.core.config import settings
+from app.core.logger import app_logger
+
 class MLService:
     """
     Service layer for ML-based threat detection.
     Maintains state for rolling window feature extraction across API requests.
     """
     
-    def __init__(self, model_path="app/models/threat_model.pkl", metadata_path="app/models/model_metadata.pkl"):
-        # Load model and metadata
+    def __init__(self):
+        # Load model and metadata using config paths
+        model_path = settings.MODEL_PATH
+        metadata_path = settings.METADATA_PATH
         if not os.path.exists(model_path) or not os.path.exists(metadata_path):
-            raise FileNotFoundError(f"Model files not found at {model_path} or {metadata_path}")
+            app_logger.error(f"Cannot initialize ML service. Model files not found at {model_path} or {metadata_path}")
+            raise FileNotFoundError(f"Model files not found")
             
-        with open(model_path, 'rb') as f:
-            self.model = pickle.load(f)
-            
-        with open(metadata_path, 'rb') as f:
-            self.metadata = pickle.load(f)
-            self.feature_cols = self.metadata['feature_cols']
+        try:
+            with open(model_path, 'rb') as f:
+                self.model = pickle.load(f)
+                
+            with open(metadata_path, 'rb') as f:
+                self.metadata = pickle.load(f)
+                self.feature_cols = self.metadata['feature_cols']
+            app_logger.info(f"ML Service initialized successfully spanning {len(self.feature_cols)} feature columns")
+        except Exception as e:
+            app_logger.critical(f"Failed to load ML models into memory: {e}", exc_info=True)
+            raise
             
         # State storage per IP (Thread-safety should be considered for high concurrecy)
         self.failed_logins = defaultdict(lambda: deque())

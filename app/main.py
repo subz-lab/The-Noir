@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import logs, detections, reports
+import os
+
+from app.core.config import settings
+from app.core.logger import app_logger
+from app.routers import logs, detections, reports, dashboard, soar
 
 app = FastAPI(
     title="AI-Powered SOC Automation API",
@@ -17,10 +21,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app_logger.info("Initializing SOC Automation API Routes")
+
 # Include Routers
 app.include_router(logs.router, prefix="/api/logs", tags=["Logs"])
 app.include_router(detections.router, prefix="/api/detections", tags=["Detections"])
 app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
+app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
+app.include_router(soar.router, prefix="/api/soar", tags=["SOAR"])
 
 @app.get("/")
 async def root():
@@ -32,4 +40,5 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    app_logger.info(f"Starting server on {settings.API_HOST}:{settings.API_PORT}")
+    uvicorn.run("app.main:app", host=settings.API_HOST, port=settings.API_PORT, reload=True)

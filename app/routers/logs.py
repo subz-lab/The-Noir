@@ -1,105 +1,49 @@
-import json
-import os
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+import traceback
+from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException, WebSocket, WebSocketDisconnect
+from typing import Dict, Any
+
+from app.core.config import settings
+from app.core.logger import app_logger
+from app.schemas.log import LogEntry, BulkLogRequest
 from app.services.ml_service import get_ml_service, MLService
 from app.services.elasticsearch_service import get_es_service, ElasticsearchService
+from app.services.buffer_service import get_buffer_service, BufferService
+from app.services.soar_service import soar_service
 
 router = APIRouter()
 
-LIVE_LOGS_PATH = "data/live_logs.jsonl"
-
-def load_live_logs():
-    logs = []
-    if os.path.exists(LIVE_LOGS_PATH):
-        try:
-            with open(LIVE_LOGS_PATH, "r", encoding="utf-8") as f:
-                for line in f:
-                    if line.strip():
-                        logs.append(json.loads(line))
-        except Exception as e:
-            print(f"Error loading live logs: {e}")
-    return logs
-
-def save_live_log(log_dict: dict):
-    try:
-        os.makedirs(os.path.dirname(LIVE_LOGS_PATH), exist_ok=True)
-        with open(LIVE_LOGS_PATH, "a", encoding="utf-8") as f:
-            f.write(json.dumps(log_dict) + "\n")
-    except Exception as e:
-        print(f"Error saving live log: {e}")
-
-def save_live_logs_batch(log_dicts: list):
-    try:
-        os.makedirs(os.path.dirname(LIVE_LOGS_PATH), exist_ok=True)
-        with open(LIVE_LOGS_PATH, "a", encoding="utf-8") as f:
-            for log_dict in log_dicts:
-                f.write(json.dumps(log_dict) + "\n")
-    except Exception as e:
-        print(f"Error saving live logs batch: {e}")
-
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: dict):
-        for connection in self.active_connections:
-            try:
-                await connection.send_json(message)
-            except Exception:
-                # Connection might be dead
-                pass
-
-manager = ConnectionManager()
-
-class LogEntry(BaseModel):
-    timestamp: str
-    ip_address: str
-    user_id: Optional[str] = None
-    event_type: str
-    port_number: Optional[int] = None
-    status: Optional[str] = None
-    request_payload: Optional[str] = None
-
-class BulkLogRequest(BaseModel):
-    logs: List[LogEntry]
-
-# Mock storage for live demo
-LIVE_LOGS = load_live_logs()
-
 @router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
+async def websocket_endpoint(websocket: WebSocket, buffer_service: BufferService = Depends(get_buffer_service)):
+    """Handles real-time SSE connecting via WebSockets to stream telemetry."""
+    await buffer_service.manager.connect(websocket)
     try:
         while True:
+            # Keep connection alive
             await websocket.receive_text()
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        buffer_service.manager.disconnect(websocket)
+    except Exception as e:
+        app_logger.error(f"WebSocket error: {e}", exc_info=True)
 
 @router.get("/")
-async def get_logs(limit: int = 100, es: ElasticsearchService = Depends(get_es_service)):
+async def get_logs(
+    limit: int = 100, 
+    es: ElasticsearchService = Depends(get_es_service),
+    buffer_service: BufferService = Depends(get_buffer_service)
+):
     """
-    Retrieves latest logs from Elasticsearch (or in-memory buffer if ES is offline).
+    Retrieves latest logs from Elasticsearch (or in-memory sliding window if ES is offline).
     """
     es_connected = False
     try:
-        logs = es.get_latest_logs(limit=limit)
-        if logs:
-            es_connected = True
+        if es.client:
+             logs = es.get_latest_logs(limit=limit)
+             es_connected = True
         else:
-            # Fallback to in-memory buffer for newly ingested logs
-            logs = LIVE_LOGS[-limit:]
-    except Exception:
-        # Fallback to in-memory if ES fails
-        logs = LIVE_LOGS[-limit:]
+             logs = buffer_service.get_recent_logs(limit)
+    except Exception as e:
+        app_logger.warning(f"Elasticsearch query failed, falling back to memory buffer. Reason: {e}")
+        logs = buffer_service.get_recent_logs(limit)
         
     return {
         "status": "success",
@@ -113,29 +57,37 @@ async def get_logs(limit: int = 100, es: ElasticsearchService = Depends(get_es_s
     }
 
 @router.post("/ingest")
-async def ingest_log(log: LogEntry, ml: MLService = Depends(get_ml_service)):
+async def ingest_log(
+    log: LogEntry, 
+    background_tasks: BackgroundTasks,
+    ml: MLService = Depends(get_ml_service),
+    buffer_service: BufferService = Depends(get_buffer_service)
+):
     """
-    Ingests a single log, performs ML analysis, and stores it in the live buffer.
+    Ingests a single log from an agent/API, performs ML analysis, stores in buffer, and broadcasts.
     """
     try:
-        # Perform ML analysis
-        prediction = ml.predict_log(log.dict())
+        prediction = ml.predict_log(log.model_dump())
         
-        # Merge log data with ML analysis
-        enriched_log = log.dict()
+        enriched_log = log.model_dump()
         enriched_log.update({
             "label": prediction.get("label"),
             "severity_index": prediction.get("severity_index"),
-            "confidence": prediction.get("confidence")
+            "confidence": prediction.get("confidence"),
+            "features": prediction.get("features", {})
         })
         
-        # Store in live buffer and persist
-        LIVE_LOGS.append(enriched_log)
-        if len(LIVE_LOGS) > 1000: LIVE_LOGS.pop(0) 
-        save_live_log(enriched_log)
+        # Abstracted state mutation
+        buffer_service.add_log(enriched_log)
         
-        # Broadcast to all connected clients
-        await manager.broadcast({"type": "NEW_LOG", "log": enriched_log})
+        # Broadcast
+        await buffer_service.manager.broadcast({"type": "NEW_LOG", "log": enriched_log})
+        
+        app_logger.info(f"Ingested single log: {log.ip_address} | {prediction.get('label')}")
+        
+        # Auto-trigger SOAR
+        if prediction.get("severity_index", 0) > 0:
+             background_tasks.add_task(soar_service.check_and_trigger_playbooks, enriched_log)
         
         return {
             "status": "success",
@@ -143,47 +95,56 @@ async def ingest_log(log: LogEntry, ml: MLService = Depends(get_ml_service)):
             "analysis": prediction
         }
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
+        app_logger.error(f"Error ingesting log: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/bulk-ingest")
-async def bulk_ingest_logs(request: BulkLogRequest, ml: MLService = Depends(get_ml_service)):
+async def bulk_ingest_logs(
+    request: BulkLogRequest, 
+    background_tasks: BackgroundTasks,
+    ml: MLService = Depends(get_ml_service),
+    buffer_service: BufferService = Depends(get_buffer_service)
+):
     """
-    Ingests multiple logs for simulation speed.
+    Ingests multiple logs simultaneously (used by Attack Simulator).
     """
     results = []
     enriched_logs = []
+    
+    app_logger.info(f"Starting bulk ingestion of {len(request.logs)} logs")
+    
     for log in request.logs:
         try:
-            prediction = ml.predict_log(log.dict())
-            enriched_log = log.dict()
+            prediction = ml.predict_log(log.model_dump())
+            enriched_log = log.model_dump()
             enriched_log.update({
                 "label": prediction.get("label"),
                 "severity_index": prediction.get("severity_index"),
-                "confidence": prediction.get("confidence")
+                "confidence": prediction.get("confidence"),
+                "features": prediction.get("features", {})
             })
-            LIVE_LOGS.append(enriched_log)
             enriched_logs.append(enriched_log)
             results.append(prediction)
-        except Exception as e:
-            print(f"Error ingesting log in bulk: {e}")
-
-    # Persist in one batch (MUCH FASTER)
-    if enriched_logs:
-        save_live_logs_batch(enriched_logs)
             
-    # Broadcast bulk update
+            # Auto-trigger SOAR
+            if prediction.get("severity_index", 0) > 0:
+                 background_tasks.add_task(soar_service.check_and_trigger_playbooks, enriched_log)
+                 
+        except Exception as e:
+            app_logger.error(f"Error predicting on bulk log: {e}", exc_info=True)
+
+    if enriched_logs:
+        # Abstracted batch saving
+        buffer_service.add_batch(enriched_logs)
+            
     if results:
-        await manager.broadcast({
+        await buffer_service.manager.broadcast({
             "type": "BULK_LOGS", 
             "count": len(results),
             "last_analysis": results[-1] if results else None
         })
         
-    # Keep buffer capped
-    if len(LIVE_LOGS) > 1000:
-        del LIVE_LOGS[:-1000]
+    app_logger.info(f"Completed bulk ingestion of {len(results)} logs")
         
     return {
         "status": "success",

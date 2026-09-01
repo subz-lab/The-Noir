@@ -1,158 +1,318 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Shield, Lock, Terminal, Activity, ArrowRight, Github } from 'lucide-react';
+import { Shield, Zap, Lock, Terminal, Activity, Eye, ArrowRight } from 'lucide-react';
 import MagneticButton from './MagneticButton';
 import CinematicHero from './CinematicHero';
 
-const LandingPage = ({ onEnter }) => {
-    const containerRef = useRef(null);
+/**
+ * The Noir — VisionOS Spatial Landing Page
+ * Apple VisionOS-inspired floating spatial interface with the original cinematic hero.
+ */
+
+// ── VisionOS Glass Panel ──
+const GlassPanel = ({ children, className = '', delay = 0, hover = true }) => (
+    <motion.div
+        initial={{ opacity: 0, y: 40, scale: 0.95 }}
+        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 1.2, delay, ease: [0.22, 1, 0.36, 1] }}
+        whileHover={hover ? { y: -8, scale: 1.02, transition: { duration: 0.5 } } : {}}
+        className={`
+            relative overflow-hidden rounded-[2rem]
+            bg-white/[0.04] backdrop-blur-[60px]
+            border border-white/[0.08]
+            shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]
+            transition-shadow duration-700
+            hover:shadow-[0_20px_60px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)]
+            ${className}
+        `}
+    >
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        {children}
+    </motion.div>
+);
+
+// ── Spatial Scroll Section ──
+const SpatialSection = ({ children, className = '', id }) => {
+    const ref = useRef(null);
     const { scrollYProgress } = useScroll({
-        target: containerRef,
-        offset: ["start start", "end end"]
+        target: ref,
+        offset: ["start end", "end start"]
     });
-
-    const featureY = useTransform(scrollYProgress, [0.1, 0.3], [100, 0]);
-    const featureOpacity = useTransform(scrollYProgress, [0.1, 0.2], [0, 1]);
-
-    const staggerContainer = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1,
-                delayChildren: 0.3
-            }
-        }
-    };
-
-    const itemFadeUp = {
-        hidden: { opacity: 0, y: 30 },
-        show: {
-            opacity: 1,
-            y: 0,
-            transition: {
-                duration: 0.8,
-                ease: [0.22, 1, 0.36, 1]
-            }
-        }
-    };
+    const y = useTransform(scrollYProgress, [0, 1], [30, -30]);
+    const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
 
     return (
-        <div ref={containerRef} className="relative bg-[#020203] selection:bg-white/10 overflow-x-hidden">
-            {/* Cinematic Background Grid */}
-            <div className="fixed inset-0 pointer-events-none opacity-20 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]" />
-            <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(20,20,25,0)_0%,rgba(2,2,3,1)_100%)]" />
+        <motion.section ref={ref} id={id} style={{ y, opacity }} className={`relative ${className}`}>
+            {children}
+        </motion.section>
+    );
+};
 
-            {/* Navbar */}
-            <nav className="fixed top-0 w-full z-50 px-8 py-6 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent backdrop-blur-sm">
-                <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-2 group"
-                >
-                    <div className="p-2 rounded-lg bg-white group-hover:glow-white transition-all duration-500 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                        <Shield className="w-5 h-5 text-black" />
+
+const LandingPage = ({ onEnter }) => {
+    return (
+        <div className="relative bg-[#030305] selection:bg-white/10 overflow-x-hidden">
+
+            {/* ═══════ AMBIENT ATMOSPHERE ═══════ */}
+            <div className="fixed inset-0 pointer-events-none">
+                <div className="absolute inset-0 opacity-[0.03]"
+                    style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '48px 48px' }}
+                />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_30%,rgba(37,99,235,0.06)_0%,transparent_60%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_100%,rgba(16,185,129,0.03)_0%,transparent_50%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(3,3,5,1)_100%)]" />
+            </div>
+
+
+            {/* ═══════ FLOATING GLASS NAVIGATION ═══════ */}
+            <motion.nav
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-[900px]"
+            >
+                <div className="
+                    flex items-center justify-between px-6 py-3
+                    rounded-[1.25rem]
+                    bg-white/[0.04] backdrop-blur-[60px]
+                    border border-white/[0.08]
+                    shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]
+                ">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.15)]">
+                            <Shield className="w-4 h-4 text-black" />
+                        </div>
+                        <span className="text-sm font-bold text-white tracking-tight font-plus-jakarta uppercase italic">THE NOIR</span>
                     </div>
-                    <span className="text-xl font-bold font-grotesk tracking-tighter text-white uppercase italic">THE NOIR</span>
-                </motion.div>
 
-                <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-4 md:gap-8 text-white/40"
-                >
-                    <a href="#" className="nav-link hidden md:block">ARCHIVE</a>
-                    <a href="#" className="nav-link hidden md:block">NEURAL FLOW</a>
-                    <MagneticButton
+                    <div className="hidden md:flex items-center gap-1">
+                        {['Platform', 'Technology', 'Security', 'Contact'].map((item) => (
+                            <a key={item} href={`#${item.toLowerCase()}`}
+                                className="px-4 py-2 text-[11px] font-semibold text-white/40 hover:text-white hover:bg-white/[0.06] rounded-xl transition-all duration-300 uppercase tracking-[0.15em]"
+                            >
+                                {item}
+                            </a>
+                        ))}
+                    </div>
+
+                    <button
                         onClick={onEnter}
-                        className="px-6 md:px-8 py-2 md:py-2.5 bg-white text-black rounded-full font-bold text-[10px] md:text-xs hover:scale-105 transition-all uppercase tracking-[0.2em] premium-shadow"
+                        className="px-5 py-2 bg-white text-black rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all duration-500 hover:scale-105"
                     >
-                        LAUNCH COMMAND
-                    </MagneticButton>
-                </motion.div>
-            </nav>
+                        Launch Platform
+                    </button>
+                </div>
+            </motion.nav>
 
-            {/* Cinematic Autoplay Hero */}
+
+            {/* ═══════ ORIGINAL CINEMATIC HERO (UNTOUCHED) ═══════ */}
             <CinematicHero onEnter={onEnter} />
 
-            {/* Feature Section with Premium Glass and Motion */}
-            <section className="relative z-10 px-6 md:px-8 py-16 md:py-24 bg-black/50">
-                <div className="max-w-7xl mx-auto">
+
+            {/* ═══════ FLOATING PRODUCT PANELS ═══════ */}
+            <SpatialSection id="platform" className="py-16 px-6 md:px-12">
+                <div className="max-w-6xl mx-auto">
                     <motion.div
-                        initial="hidden"
-                        whileInView="show"
-                        viewport={{ once: true, margin: "-100px" }}
-                        variants={staggerContainer}
-                        className="grid grid-cols-1 md:grid-cols-3 gap-12"
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        className="text-center mb-12"
                     >
+                        <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-blue-400/60 mb-4">Core Capabilities</p>
+                        <h2 className="text-4xl md:text-6xl font-bold tracking-[-0.03em] text-white font-outfit leading-tight">
+                            Intelligent Defense<br />
+                            <span className="text-white/20">at Every Layer</span>
+                        </h2>
+                    </motion.div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {[
                             {
-                                icon: Activity,
-                                title: "Neural Detection",
-                                desc: "RandomForest models trained on 2M+ telemetry events to catch zero-day patterns with silent precision."
+                                icon: Eye,
+                                title: 'Threat Detection',
+                                desc: 'Neural pattern recognition trained on 2M+ telemetry events. Catches zero-day exploits before they propagate.',
+                                stat: '< 0.3s',
+                                statLabel: 'Detection Latency',
+                                color: 'text-rose-400',
+                                bg: 'from-rose-500/10'
+                            },
+                            {
+                                icon: Zap,
+                                title: 'Automation Engine',
+                                desc: 'Autonomous response playbooks that neutralize threats without human intervention. Self-healing infrastructure.',
+                                stat: '1,400+',
+                                statLabel: 'Daily Decisions',
+                                color: 'text-emerald-400',
+                                bg: 'from-emerald-500/10'
                             },
                             {
                                 icon: Terminal,
-                                title: "AI Forensics",
-                                desc: "Automated blast radius analysis using deep learning to reconstruct infiltration timelines in seconds."
+                                title: 'Incident Management',
+                                desc: 'AI-driven blast radius analysis with automated forensic timeline reconstruction in seconds.',
+                                stat: '99.8%',
+                                statLabel: 'Resolution Rate',
+                                color: 'text-blue-400',
+                                bg: 'from-blue-500/10'
                             },
                             {
-                                icon: Lock,
-                                title: "Hardened Core",
-                                desc: "Enterprise-grade ELK orchestration containerized with Docker, ensuring immutable system integrity."
+                                icon: Activity,
+                                title: 'Real-Time Monitoring',
+                                desc: 'Global sensor mesh with sub-second telemetry ingestion across 14 enterprise nodes worldwide.',
+                                stat: '14',
+                                statLabel: 'Active Nodes',
+                                color: 'text-orange-400',
+                                bg: 'from-orange-500/10'
                             }
-                        ].map((feat, i) => (
-                            <motion.div
-                                key={i}
-                                variants={itemFadeUp}
-                                className="glass-card group hover:translate-y-[-10px] transition-all duration-500"
-                            >
-                                <div className="p-4 rounded-2xl bg-white/5 w-fit mb-8 group-hover:bg-white group-hover:text-black transition-all duration-500">
-                                    <feat.icon className="w-6 h-6" />
+                        ].map((panel, i) => (
+                            <GlassPanel key={i} delay={i * 0.1} className="p-10">
+                                <div className={`absolute top-0 left-0 right-0 h-32 bg-gradient-to-b ${panel.bg} to-transparent opacity-60 rounded-t-[2rem]`} />
+                                <div className="relative z-10">
+                                    <div className="flex items-start justify-between mb-8">
+                                        <div className={`p-3 rounded-2xl bg-white/[0.06] ${panel.color}`}>
+                                            <panel.icon className="w-6 h-6" />
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-2xl font-bold text-white font-outfit">{panel.stat}</p>
+                                            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/25">{panel.statLabel}</p>
+                                        </div>
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-white mb-4 tracking-tight font-outfit">{panel.title}</h3>
+                                    <p className="text-white/35 text-sm leading-relaxed font-inter">{panel.desc}</p>
                                 </div>
-                                <h3 className="text-3xl font-bold text-white mb-6 font-outfit tracking-tighter leading-tight">{feat.title}</h3>
-                                <p className="text-white/40 leading-relaxed text-lg font-normal font-inter">{feat.desc}</p>
-                            </motion.div>
+                            </GlassPanel>
                         ))}
-                    </motion.div>
+                    </div>
+                </div>
+            </SpatialSection>
 
-                    {/* Big Text Callout with Reveal */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
+
+            {/* ═══════ FLOATING VISUALIZATION ═══════ */}
+            <SpatialSection id="technology" className="py-16 px-6 md:px-12">
+                <div className="max-w-5xl mx-auto">
+                    <GlassPanel hover={false} className="p-10 md:p-12">
+                        <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-b from-blue-500/[0.04] to-transparent pointer-events-none" />
+
+                        <div className="relative z-10 flex flex-col items-center text-center">
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
+                                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/80">Neural Grid Active</span>
+                            </div>
+
+                            <h2 className="text-3xl md:text-5xl font-bold tracking-[-0.03em] text-white mb-6 font-outfit leading-tight">
+                                Global Threat<br />Intelligence Mesh
+                            </h2>
+                            <p className="text-white/30 text-base max-w-lg mb-10 font-inter leading-relaxed">
+                                A self-organizing neural network that maps, tracks, and neutralizes threats across your entire infrastructure in real-time.
+                            </p>
+
+                            {/* Visualization: Abstract Network */}
+                            <div className="relative w-full h-[300px] md:h-[400px] rounded-3xl overflow-hidden bg-black/30 border border-white/[0.04]">
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    {[1, 2, 3, 4].map((ring) => (
+                                        <motion.div
+                                            key={ring}
+                                            animate={{ rotate: ring % 2 === 0 ? 360 : -360 }}
+                                            transition={{ duration: 30 + ring * 10, repeat: Infinity, ease: "linear" }}
+                                            className="absolute rounded-full border border-white/[0.04]"
+                                            style={{ width: `${ring * 22}%`, height: `${ring * 22}%` }}
+                                        />
+                                    ))}
+                                    <div className="w-4 h-4 rounded-full bg-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.5)] z-10" />
+                                </div>
+
+                                {[
+                                    { x: '20%', y: '30%', color: 'bg-rose-500' },
+                                    { x: '75%', y: '25%', color: 'bg-emerald-500' },
+                                    { x: '30%', y: '70%', color: 'bg-orange-400' },
+                                    { x: '80%', y: '65%', color: 'bg-blue-400' },
+                                    { x: '50%', y: '15%', color: 'bg-emerald-500' },
+                                ].map((node, i) => (
+                                    <motion.div
+                                        key={i}
+                                        animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
+                                        transition={{ duration: 3, delay: i * 0.5, repeat: Infinity }}
+                                        className={`absolute w-2 h-2 rounded-full ${node.color} shadow-lg`}
+                                        style={{ left: node.x, top: node.y }}
+                                    />
+                                ))}
+
+                                <div className="absolute inset-0 opacity-[0.02]"
+                                    style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '40px 40px' }}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-8 mt-12 w-full max-w-md">
+                                {[
+                                    { label: 'Nodes', value: '14' },
+                                    { label: 'Uptime', value: '99.97%' },
+                                    { label: 'Latency', value: '< 1ms' },
+                                ].map((s, i) => (
+                                    <div key={i} className="text-center">
+                                        <p className="text-xl font-bold text-white font-outfit">{s.value}</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/20 mt-1">{s.label}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </GlassPanel>
+                </div>
+            </SpatialSection>
+
+
+            {/* ═══════ DEPTH CALLOUT + CTA ═══════ */}
+            <SpatialSection id="security" className="py-20 px-6">
+                <div className="max-w-4xl mx-auto text-center">
+                    <motion.h2
+                        initial={{ opacity: 0, scale: 0.95 }}
                         whileInView={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 1.5 }}
-                        className="mt-20 md:mt-32 text-center px-4"
+                        viewport={{ once: true }}
+                        transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+                        className="text-4xl md:text-7xl font-bold tracking-[-0.04em] text-white/15 mb-16 uppercase leading-[1.05] font-outfit"
                     >
-                        <h2 className="text-3xl md:text-6xl lg:text-7xl font-black tracking-tighter text-white/25 mb-12 md:mb-20 uppercase leading-[1.1] md:leading-none font-outfit">
-                            "DEFENSE IS NOT<br className="hidden md:block" /> A REACTION, BUT<br className="hidden md:block" /> AN EVOLUTION."
-                        </h2>
+                        "DEFENSE IS NOT<br />A REACTION, BUT<br />AN EVOLUTION."
+                    </motion.h2>
 
-                        <div className="flex justify-center">
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1, delay: 0.3 }}
+                    >
+                        <GlassPanel hover={false} className="inline-block">
                             <MagneticButton
                                 onClick={onEnter}
-                                className="group px-16 py-8 bg-transparent border border-white/10 text-white rounded-[2rem] font-bold text-2xl hover:bg-white hover:text-black transition-all duration-700 flex items-center gap-6"
+                                className="px-16 py-8 text-white text-lg font-bold uppercase tracking-[0.15em] flex items-center gap-5 group"
                             >
-                                START MONITORING
-                                <ArrowRight className="w-8 h-8 group-hover:translate-x-3 transition-transform duration-500" />
+                                Start Monitoring
+                                <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform duration-500" />
                             </MagneticButton>
-                        </div>
+                        </GlassPanel>
                     </motion.div>
                 </div>
-            </section>
+            </SpatialSection>
 
-            <footer className="py-24 border-t border-white/5 text-center bg-black relative z-10">
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    className="flex flex-col items-center gap-8"
-                >
-                    <div className="flex items-center gap-2 opacity-30 grayscale">
-                        <Shield className="w-5 h-5" />
-                        <span className="text-sm font-black tracking-[0.3em]">THE NOIR</span>
-                    </div>
-                    <p className="text-white/20 text-xs font-bold tracking-widest uppercase">© 2026 The Noir Autonomous Intelligence. Built for hyper-scale defense.</p>
-                </motion.div>
+
+            {/* ═══════ FOOTER ═══════ */}
+            <footer className="relative py-12 border-t border-white/[0.04]">
+                <div className="max-w-4xl mx-auto text-center px-6">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        className="flex flex-col items-center gap-6"
+                    >
+                        <div className="flex items-center gap-2.5 opacity-30">
+                            <Shield className="w-4 h-4 text-white" />
+                            <span className="text-xs font-bold tracking-[0.3em] uppercase">THE NOIR</span>
+                        </div>
+                        <p className="text-white/15 text-[10px] font-semibold tracking-[0.2em] uppercase">
+                            © 2026 The Noir Autonomous Intelligence. Spatial defense for the modern enterprise.
+                        </p>
+                    </motion.div>
+                </div>
             </footer>
+
         </div>
     );
 };

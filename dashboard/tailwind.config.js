@@ -7,38 +7,38 @@ export default {
     theme: {
         extend: {
             colors: {
-                border: "hsl(var(--border))",
-                input: "hsl(var(--input))",
-                ring: "hsl(var(--ring))",
-                background: "hsl(var(--background))",
-                foreground: "hsl(var(--foreground))",
+                border: "var(--card-border)",
+                input: "var(--card-border)",
+                ring: "var(--primary)",
+                background: "var(--background)",
+                foreground: "var(--foreground)",
                 primary: {
-                    DEFAULT: "hsl(var(--primary))",
-                    foreground: "hsl(var(--primary-foreground))",
+                    DEFAULT: "var(--primary)",
+                    foreground: "var(--foreground)",
                 },
                 secondary: {
-                    DEFAULT: "hsl(var(--secondary))",
-                    foreground: "hsl(var(--secondary-foreground))",
+                    DEFAULT: "var(--secondary)",
+                    foreground: "var(--foreground)",
                 },
                 destructive: {
-                    DEFAULT: "hsl(var(--destructive))",
-                    foreground: "hsl(var(--destructive-foreground))",
+                    DEFAULT: "var(--severity-critical)",
+                    foreground: "var(--foreground)",
                 },
                 muted: {
-                    DEFAULT: "hsl(var(--muted))",
-                    foreground: "hsl(var(--muted-foreground))",
+                    DEFAULT: "var(--muted)",
+                    foreground: "var(--muted-foreground)",
                 },
                 accent: {
-                    DEFAULT: "hsl(var(--accent))",
-                    foreground: "hsl(var(--accent-foreground))",
+                    DEFAULT: "var(--accent)",
+                    foreground: "var(--foreground)",
                 },
                 popover: {
-                    DEFAULT: "hsl(var(--popover))",
-                    foreground: "hsl(var(--popover-foreground))",
+                    DEFAULT: "var(--card)",
+                    foreground: "var(--foreground)",
                 },
                 card: {
-                    DEFAULT: "hsl(var(--card))",
-                    foreground: "hsl(var(--card-foreground))",
+                    DEFAULT: "var(--card)",
+                    foreground: "var(--foreground)",
                 },
                 cyber: {
                     dark: "#020617",
@@ -53,6 +53,8 @@ export default {
             fontFamily: {
                 grotesk: ["'Outfit'", "sans-serif"],
                 inter: ["Inter", "sans-serif"],
+                'plus-jakarta': ["'Plus Jakarta Sans'", "sans-serif"],
+                outfit: ["'Outfit'", "sans-serif"],
             },
             backgroundImage: {
                 'cyber-gradient': 'linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%)',

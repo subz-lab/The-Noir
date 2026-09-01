@@ -16,18 +16,26 @@ const CustomCursor = () => {
             cursorY.set(e.clientY - 16);
         };
 
-        const handleHover = () => setIsHovering(true);
-        const handleUnhover = () => setIsHovering(false);
+        // Use event delegation on document to avoid per-element listener leaks
+        const handleOverDocument = (e) => {
+            if (e.target.closest('button, a, input, [role="button"]')) {
+                setIsHovering(true);
+            }
+        };
+        const handleOutDocument = (e) => {
+            if (e.target.closest('button, a, input, [role="button"]')) {
+                setIsHovering(false);
+            }
+        };
 
         window.addEventListener('mousemove', moveMouse);
-
-        document.querySelectorAll('button, a, input, [role="button"]').forEach((el) => {
-            el.addEventListener('mouseenter', handleHover);
-            el.addEventListener('mouseleave', handleUnhover);
-        });
+        document.addEventListener('mouseover', handleOverDocument);
+        document.addEventListener('mouseout', handleOutDocument);
 
         return () => {
             window.removeEventListener('mousemove', moveMouse);
+            document.removeEventListener('mouseover', handleOverDocument);
+            document.removeEventListener('mouseout', handleOutDocument);
         };
     }, [cursorX, cursorY]);
 

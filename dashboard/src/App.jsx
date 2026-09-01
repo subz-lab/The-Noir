@@ -1,3 +1,4 @@
+// The Noir — Core Orchestrator
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LandingPage from './components/LandingPage';
@@ -50,7 +51,7 @@ const App = () => {
                     ))}
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-[10px] font-black tracking-widest text-white/20 uppercase">Network Integrity</span>
+                    <span className="text-[10px] font-black tracking-widest text-white/20 uppercase">NOIR NETWORK INTEGRITY</span>
                     <div className="flex items-center gap-1.5 mt-1">
                         <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
                         <span className="text-[9px] font-bold text-emerald-500/80 uppercase">All Nodes Operational</span>
