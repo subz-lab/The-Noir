@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Target, Zap, RefreshCcw, CheckCircle, XCircle, ShieldCheck } from 'lucide-react';
 import SentinelGrid, { SentinelSection } from '../components/SentinelGrid';
+import PageHeader from '../components/PageHeader';
 import { bulkIngestLogs, ATTACK_PRESETS, fetchActionHistory } from '../api';
+
 
 const getSeverityColor = (label) => {
     const l = label?.toUpperCase();
@@ -63,16 +65,12 @@ const AttackSimulatorPage = () => {
 
     return (
         <div className="w-full animate-in fade-in zoom-in-95 duration-500">
-            {/* Header */}
-            <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-                    <Target className="w-6 h-6 text-orange-400" />
-                </div>
-                <div>
-                    <h2 className="text-3xl font-bold text-white font-grotesk tracking-tight">Attack Simulator</h2>
-                    <p className="text-sm text-white/40">Inject synthetic attack vectors to test neural network classification and SOAR responses</p>
-                </div>
-            </div>
+            <PageHeader
+                icon={Target}
+                iconColor="#F59E0B"
+                title="Attack Simulator"
+                subtitle="Inject synthetic attack vectors · Test ML classification · Trigger SOAR"
+            />
 
             <SentinelGrid className="mb-8">
                 <SentinelSection id="attack-vectors" colSpan="col-span-12" title="Select Attack Vector">

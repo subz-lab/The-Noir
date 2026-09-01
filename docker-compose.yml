@@ -72,8 +72,9 @@ services:
       - "8000:8000"
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - GROQ_API_KEY=${GROQ_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - MODEL_NAME=gpt-4
+      - MODEL_NAME=${MODEL_NAME:-groq/compound}
     networks:
       - soc-network
     depends_on:

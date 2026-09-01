@@ -1,100 +1,117 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Zap, Activity, Cpu } from 'lucide-react';
+
+const nodes = [
+    { id: 'core',       label: 'Neural Core',      x: 50, y: 50, size: 40, color: '#2563EB', glow: 'rgba(37,99,235,0.5)',   type: 'center' },
+    { id: 'ml',         label: 'ML Engine',        x: 25, y: 22, size: 28, color: '#7C3AED', glow: 'rgba(124,58,237,0.4)',  type: 'node' },
+    { id: 'siem',       label: 'SIEM',             x: 75, y: 22, size: 28, color: '#0891B2', glow: 'rgba(8,145,178,0.4)',   type: 'node' },
+    { id: 'soar',       label: 'SOAR',             x: 82, y: 60, size: 26, color: '#10B981', glow: 'rgba(16,185,129,0.4)',  type: 'node' },
+    { id: 'threat',     label: 'Threat Intel',     x: 18, y: 60, size: 26, color: '#E11D48', glow: 'rgba(225,29,72,0.4)',   type: 'node' },
+    { id: 'forensics',  label: 'Forensics',        x: 50, y: 82, size: 24, color: '#F59E0B', glow: 'rgba(245,158,11,0.4)',  type: 'node' },
+    { id: 'log',        label: 'Log Ingest',       x: 35, y: 38, size: 18, color: '#6366F1', glow: 'rgba(99,102,241,0.3)',  type: 'small' },
+    { id: 'automate',   label: 'Automation',       x: 65, y: 38, size: 18, color: '#06B6D4', glow: 'rgba(6,182,212,0.3)',   type: 'small' },
+];
+
+const edges = [
+    ['core', 'ml'],    ['core', 'siem'],   ['core', 'soar'],
+    ['core', 'threat'],['core', 'forensics'],
+    ['ml',   'log'],   ['siem','automate'],
+    ['soar', 'forensics'], ['threat', 'ml'],
+    ['log',  'core'],  ['automate','core'],
+];
+
+const pct = (v) => `${v}%`;
 
 const AutomationBrain = () => {
+    const getNodePos = (id) => {
+        const n = nodes.find(n => n.id === id);
+        return n ? { x: n.x, y: n.y } : { x: 50, y: 50 };
+    };
+
     return (
-        <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="glass-deep rounded-[2.5rem] p-10 holographic-glow relative overflow-hidden h-[450px]"
-        >
-            <div className="flex items-center justify-between mb-8 relative z-10">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.2)]">
-                        <Brain className="w-6 h-6 text-indigo-400" />
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-bold text-white tracking-tight uppercase">Automation Brain</h3>
-                        <p className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-black italic">Active Playbook Cluster: ALPHA-9</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-full">
-                    <Zap className="w-3 h-3 text-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Processing Core</span>
-                </div>
-            </div>
+        <div className="relative h-full w-full overflow-hidden rounded-xl">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(37,99,235,0.08),transparent_70%)]" />
 
-            {/* Neural Pathway Visualization (SVG) */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
-                <svg width="400" height="300" viewBox="0 0 400 300" className="w-full h-full p-12">
-                    <defs>
-                        <linearGradient id="line-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="transparent" />
-                            <stop offset="50%" stopColor="#6366f1" />
-                            <stop offset="100%" stopColor="transparent" />
-                        </linearGradient>
-                    </defs>
-                    {/* Placeholder for neural lines */}
-                    <motion.path
-                        d="M 50 150 Q 200 50 350 150"
-                        stroke="url(#line-grad)"
-                        strokeWidth="2"
-                        fill="transparent"
-                        initial={{ pathLength: 0 }}
-                        animate={{ pathLength: 1 }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                    />
-                    <motion.path
-                        d="M 50 150 Q 200 250 350 150"
-                        stroke="url(#line-grad)"
-                        strokeWidth="2"
-                        fill="transparent"
-                        initial={{ pathLength: 0 }}
-                        animate={{ pathLength: 1 }}
-                        transition={{ duration: 4, repeat: Infinity, ease: "linear", delay: 1 }}
-                    />
-                    <motion.circle
-                        cx="200" cy="150" r="40"
-                        stroke="#6366f1" strokeWidth="1" fill="transparent"
-                        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-                        transition={{ duration: 4, repeat: Infinity }}
-                    />
-                </svg>
-            </div>
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                {edges.map(([a, b], i) => {
+                    const pa = getNodePos(a);
+                    const pb = getNodePos(b);
+                    return (
+                        <motion.line
+                            key={`${a}-${b}`}
+                            x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y}
+                            stroke="rgba(255,255,255,0.06)"
+                            strokeWidth="0.3"
+                            strokeDasharray="1 1"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: i * 0.06 }}
+                        />
+                    );
+                })}
+                {edges.slice(0, 5).map(([a, b], i) => {
+                    const pa = getNodePos(a);
+                    const pb = getNodePos(b);
+                    return (
+                        <motion.circle
+                            key={`pulse-${i}`}
+                            r="0.8"
+                            fill={nodes.find(n => n.id === a)?.color || '#2563EB'}
+                            opacity={0.8}
+                            animate={{
+                                cx: [pa.x, pb.x, pa.x],
+                                cy: [pa.y, pb.y, pa.y],
+                            }}
+                            transition={{
+                                duration: 2.5 + i * 0.4,
+                                repeat: Infinity,
+                                ease: 'linear',
+                                delay: i * 0.6,
+                            }}
+                        />
+                    );
+                })}
+            </svg>
 
-            <div className="grid grid-cols-2 gap-6 relative z-10 mt-12">
-                {[
-                    { label: 'Neural Throughput', val: '8.4 GB/s', icon: Activity, color: 'text-indigo-400' },
-                    { label: 'Decision Latency', val: '0.42 ms', icon: Cpu, color: 'text-emerald-400' },
-                    { label: 'Active Neurons', val: '14,240', icon: Brain, color: 'text-white/60' },
-                    { label: 'Trigger Chains', val: '158', icon: Zap, color: 'text-rose-400' },
-                ].map((stat, i) => (
+            {nodes.map((node, i) => (
+                <motion.div
+                    key={node.id}
+                    className="absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer"
+                    style={{ left: pct(node.x), top: pct(node.y) }}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.07 + 0.2, type: 'spring', stiffness: 260, damping: 20 }}
+                    whileHover={{ scale: 1.15 }}
+                >
                     <motion.div
-                        key={i}
-                        whileHover={{ y: -5, scale: 1.02 }}
-                        className="bg-white/[0.02] border border-white/5 p-5 rounded-3xl hover:bg-white/[0.05] transition-all group"
+                        className="rounded-full flex items-center justify-center"
+                        style={{
+                            width: node.size,
+                            height: node.size,
+                            background: `radial-gradient(circle, ${node.color}30, ${node.color}08)`,
+                            border: `1px solid ${node.color}50`,
+                            boxShadow: `0 0 ${node.type === 'center' ? 20 : 10}px ${node.glow}`,
+                        }}
+                        animate={{
+                            boxShadow: [
+                                `0 0 ${node.type === 'center' ? 10 : 5}px ${node.glow}`,
+                                `0 0 ${node.type === 'center' ? 25 : 15}px ${node.glow}`,
+                                `0 0 ${node.type === 'center' ? 10 : 5}px ${node.glow}`,
+                            ],
+                        }}
+                        transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.2 }}
                     >
-                        <div className="flex items-center gap-3 mb-2">
-                            <stat.icon className={`w-3.5 h-3.5 ${stat.color} group-hover:scale-110 transition-transform`} />
-                            <span className="text-[9px] text-white/20 uppercase tracking-[0.2em] font-black">{stat.label}</span>
-                        </div>
-                        <p className="text-xl font-bold text-white font-outfit">{stat.val}</p>
+                        <div className="rounded-full" style={{ width: node.size * 0.4, height: node.size * 0.4, background: node.color, opacity: 0.9 }} />
                     </motion.div>
-                ))}
-            </div>
-
-            <div className="absolute bottom-8 left-10 right-10 flex items-center justify-between border-t border-white/5 pt-6">
-                <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]" />
-                    <span className="text-[10px] text-white/40 uppercase tracking-widest font-black italic">Brain-Sync: Synchronized</span>
-                </div>
-                <button className="text-[10px] text-indigo-400 font-black uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2 group">
-                    View Network Atlas
-                    <motion.span animate={{ x: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 2 }}>→</motion.span>
-                </button>
-            </div>
-        </motion.div>
+                    <span
+                        className="text-[7px] font-mono font-bold mt-1 opacity-50 group-hover:opacity-100 transition-opacity whitespace-nowrap uppercase tracking-wider"
+                        style={{ color: node.color }}
+                    >
+                        {node.label}
+                    </span>
+                </motion.div>
+            ))}
+        </div>
     );
 };
 

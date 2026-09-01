@@ -5,37 +5,49 @@ import os
 from app.core.config import settings
 from app.core.logger import app_logger
 from app.routers import logs, detections, reports, dashboard, soar
+from app.routers import agents  # Agentic AI — Gap 1
 
 app = FastAPI(
     title="AI-Powered SOC Automation API",
-    description="Backend hub for ML-based threat detection and LLM-powered incident reporting.",
-    version="1.0.0"
+    description="Backend hub for ML-based threat detection, LLM-powered incident reporting, and Agentic AI collaboration.",
+    version="2.0.0"
 )
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, replace with specific origins
+    allow_origins=["*"],  # In production, replace with specific origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app_logger.info("Initializing SOC Automation API Routes")
+app_logger.info("Initializing SOC Automation API Routes v2 (Agentic AI)")
 
-# Include Routers
-app.include_router(logs.router, prefix="/api/logs", tags=["Logs"])
+# Existing routers
+app.include_router(logs.router,       prefix="/api/logs",       tags=["Logs"])
 app.include_router(detections.router, prefix="/api/detections", tags=["Detections"])
-app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
-app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
-app.include_router(soar.router, prefix="/api/soar", tags=["SOAR"])
+app.include_router(reports.router,    prefix="/api/reports",    tags=["Reports"])
+app.include_router(dashboard.router,  prefix="/api/dashboard",  tags=["Dashboard"])
+app.include_router(soar.router,       prefix="/api/soar",       tags=["SOAR"])
+
+# Agentic AI router — Gap 1
+app.include_router(agents.router,     prefix="/api/agents",     tags=["Agents"])
 
 @app.get("/")
 async def root():
     return {
         "status": "online",
-        "message": "SOC Automation API is operational",
-        "version": "1.0.0"
+        "message": "SOC Automation API is operational (Agentic AI v2)",
+        "version": "2.0.0",
+        "agents": ["LogAnalysisAgent", "ThreatInvestigationAgent"],
+        "new_endpoints": [
+            "POST /api/agents/process",
+            "GET  /api/agents/status",
+            "GET  /api/agents/incidents",
+            "GET  /api/agents/activity",
+            "GET  /api/reports/{id}/download",
+        ]
     }
 
 if __name__ == "__main__":

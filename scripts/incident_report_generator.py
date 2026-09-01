@@ -16,17 +16,25 @@ class IncidentReportGenerator:
     """
     
     def __init__(self, api_key=None):
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        if not self.api_key:
-            print("⚠ Warning: No OpenAI API key found. Reports will be mocked.")
-            self.client = None
-        else:
+        groq_key = os.getenv("GROQ_API_KEY")
+        openai_key = api_key or os.getenv("OPENAI_API_KEY")
+        
+        if groq_key or (openai_key and openai_key.startswith("gsk_")):
+            self.api_key = groq_key or openai_key
+            self.client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=self.api_key)
+            self.model = os.getenv("MODEL_NAME", "groq/compound")
+        elif openai_key:
+            self.api_key = openai_key
             self.client = OpenAI(api_key=self.api_key)
+            self.model = os.getenv("MODEL_NAME", "gpt-4")
+        else:
+            print("⚠ Warning: No Groq/OpenAI API key found. Reports will be mocked.")
+            self.client = None
+            self.model = os.getenv("MODEL_NAME", "groq/compound")
         
         self.formatter = ThreatSummaryFormatter()
         self.scorer = SeverityScorer()
         self.storage = ReportStorage()
-        self.model = os.getenv("MODEL_NAME", "gpt-4")
 
     def generate_report(self, log_entry, ml_result=None):
         """

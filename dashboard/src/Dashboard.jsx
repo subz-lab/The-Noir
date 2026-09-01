@@ -48,13 +48,13 @@ const Dashboard = ({ onExit }) => {
 
             if (reportsRes.status === 'fulfilled') {
                 const rawData = reportsRes.value || [];
-                const demoIncidents = (Array.isArray(rawData) ? rawData : []).map((inc, i) => ({
+                const realIncidents = (Array.isArray(rawData) ? rawData : []).map((inc, i) => ({
                     ...inc,
-                    id: `SEC-${1000 + i}`,
-                    type: i % 2 === 0 ? 'Exfiltration Attempt' : 'Unauthorized Payload',
-                    status: i % 3 === 0 ? 'Mitigated' : 'Investigating'
+                    id: inc.report_id || `IR-${1000 + i}`,
+                    type: inc.event_type ? inc.event_type.replace(/_/g, ' ').toUpperCase() : (inc.type || 'SECURITY INCIDENT'),
+                    status: inc.severity_label === 'CRITICAL' ? 'High Alert' : inc.severity_label === 'HIGH' ? 'Investigating' : 'Mitigated'
                 }));
-                setIncidents(demoIncidents);
+                setIncidents(realIncidents);
             }
         } catch (err) {
             console.error("Dashboard Load Error:", err);
@@ -83,8 +83,11 @@ const Dashboard = ({ onExit }) => {
     return (
         <div className="flex min-h-screen bg-[#020204] text-[#F8F9FA] overflow-hidden selection:bg-blue-500/30 font-plus-jakarta">
             {/* Global Identity Layer */}
-            <SentinelTopNav />
-            <LayeredSidebar active={activeModule} onChange={setActiveModule} />
+            <SentinelTopNav
+                incidentCount={incidents.length}
+                alertCount={logs.filter(l => ['THREAT','CRITICAL'].includes((l.label||'').toUpperCase())).length}
+            />
+            <LayeredSidebar active={activeModule} onChange={setActiveModule} incidentCount={incidents.length} />
 
             <div className="flex-1 flex flex-col min-w-0 h-screen pt-20">
                 {/* 🔷 Loading HUD (Cinematic Reveal) */}

@@ -13,8 +13,10 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     
     # LLM Settings
+    GROQ_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
-    MODEL_NAME: str = "gpt-4"
+    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
+    MODEL_NAME: str = "groq/compound"
     
     # Elasticsearch Settings
     ELASTICSEARCH_URL: str = "http://localhost:9200"

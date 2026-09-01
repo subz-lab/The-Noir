@@ -6,12 +6,26 @@ from app.services.soar_service import soar_service
 
 router = APIRouter()
 
+from app.services.buffer_service import get_buffer_service, BufferService
+
 @router.get("/stats")
-async def get_detection_stats():
+async def get_detection_stats(buffer: BufferService = Depends(get_buffer_service)):
     """
-    Returns summary statistics of ML detections.
+    Returns live summary statistics of ML detections from active buffer.
     """
-    return {"total_threats": 0, "accuracy_baseline": 0.97, "model_type": "RandomForest"}
+    logs = buffer.live_logs
+    threats = sum(1 for l in logs if l.get("label") == "Threat")
+    suspicious = sum(1 for l in logs if l.get("label") == "Suspicious")
+    confidences = [l.get("confidence", 0) for l in logs if l.get("confidence")]
+    avg_conf = round(sum(confidences) / max(len(confidences), 1), 3) if confidences else 0.95
+
+    return {
+        "total_analyzed": len(logs),
+        "total_threats": threats,
+        "total_suspicious": suspicious,
+        "average_confidence": avg_conf,
+        "model_type": "RandomForest"
+    }
 
 @router.post("/predict")
 async def predict_threat(request: dict, background_tasks: BackgroundTasks, ml: MLService = Depends(get_ml_service)):

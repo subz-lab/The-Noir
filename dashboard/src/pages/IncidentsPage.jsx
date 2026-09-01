@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SentinelGrid, { SentinelSection } from '../components/SentinelGrid';
+import PageHeader from '../components/PageHeader';
 import IncidentPanel from '../components/IncidentPanel';
 import AIThreatTimeline from '../components/AIThreatTimeline';
 import Skeleton from '../components/Skeleton';
@@ -113,17 +114,12 @@ const IncidentsPage = ({ incidents, logs = [], isLoading, onRefresh }) => {
 
     return (
         <div className="w-full animate-in fade-in zoom-in-95 duration-500">
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
-                        <ShieldAlert className="w-6 h-6 text-rose-500" />
-                    </div>
-                    <div>
-                        <h2 className="text-3xl font-bold text-white font-grotesk tracking-tight">Incidents & Alerts</h2>
-                        <p className="text-sm text-white/40">Real-time threat detection, triage queue, and alert stream</p>
-                    </div>
-                </div>
-            </div>
+            <PageHeader
+                icon={ShieldAlert}
+                iconColor="#E11D48"
+                title="Incidents & Alerts"
+                subtitle="Real-time threat detection · Triage queue · Alert stream"
+            />
 
             {/* Tab Switcher */}
             <div className="flex items-center gap-2 mb-8 bg-white/5 p-1.5 rounded-2xl border border-white/10 w-fit">

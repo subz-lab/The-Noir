@@ -1,7 +1,8 @@
 import os
 import re
+import asyncio
 from typing import Dict, Any, Optional
-from openai import OpenAI
+from openai import OpenAI, AuthenticationError, NotFoundError, RateLimitError
 
 from app.core.config import settings
 from app.core.logger import app_logger
@@ -9,20 +10,32 @@ from app.core.logger import app_logger
 class LLMService:
     """
     Service for AI-powered security analysis and incident reporting.
-    Wraps GPT-4 logic and heuristic severity scoring.
+    Supports Groq (high-speed inference) and OpenAI models with heuristic fallbacks.
     """
     
     def __init__(self):
-        self.api_key = settings.OPENAI_API_KEY
-        if not self.api_key:
-            app_logger.warning("OpenAI API Key NOT found. Operating in HEURISTIC MOCK mode via BaseSettings.")
-            self.client = None
-        else:
-            app_logger.info("OpenAI API Key verified. Initializing GPT Engine.")
-            self.client = OpenAI(api_key=self.api_key)
+        # Priority: GROQ_API_KEY, then OPENAI_API_KEY
+        self.groq_key = settings.GROQ_API_KEY or (settings.OPENAI_API_KEY if settings.OPENAI_API_KEY.startswith("gsk_") else "")
+        self.openai_key = settings.OPENAI_API_KEY if not settings.OPENAI_API_KEY.startswith("gsk_") else ""
         
-        self.model = settings.MODEL_NAME
-        app_logger.debug(f"LLM Service mapped to AI model: {self.model}")
+        if self.groq_key:
+            self.provider = "Groq"
+            self.api_key = self.groq_key
+            self.client = OpenAI(base_url=settings.GROQ_BASE_URL, api_key=self.groq_key)
+            self.model = settings.MODEL_NAME if settings.MODEL_NAME != "gpt-4" else "groq/compound"
+            app_logger.info(f"Groq API Key verified. Initializing Groq Engine with model: {self.model}")
+        elif self.openai_key:
+            self.provider = "OpenAI"
+            self.api_key = self.openai_key
+            self.client = OpenAI(api_key=self.openai_key)
+            self.model = settings.MODEL_NAME
+            app_logger.info(f"OpenAI API Key verified. Initializing GPT Engine with model: {self.model}")
+        else:
+            self.provider = "Mock"
+            self.client = None
+            self.model = settings.MODEL_NAME
+            app_logger.warning("No LLM API Key (Groq/OpenAI) found. Operating in HEURISTIC MOCK mode via BaseSettings.")
+
         self.sql_pattern = r"(?i)(OR\s+['\"]?\d|DROP\s+TABLE|UNION\s+SELECT|--|admin['\"]--|SELECT\s+\*\s+FROM|' OR '1'='1|' OR 'a'='a)"
 
     def calculate_severity(self, ml_result: Dict, log_entry: Dict) -> Dict[str, Any]:
@@ -101,8 +114,10 @@ class LLMService:
         if not self.client:
             return self._generate_heuristic_report(log_entry, ml_result, severity_data, "MOCK MODE (No API Key)")
 
-        try:
-            response = self.client.chat.completions.create(
+        # FIX: Wrap synchronous OpenAI client in asyncio.to_thread() to avoid
+        # blocking the FastAPI event loop during LLM calls under concurrent load.
+        def _call_llm():
+            return self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a professional SOC analyst."},
@@ -110,17 +125,27 @@ class LLMService:
                 ],
                 temperature=0.3
             )
+
+        try:
+            response = await asyncio.to_thread(_call_llm)
             return response.choices[0].message.content
+        except AuthenticationError:
+            # FIX: Catch invalid/expired API key explicitly — never embed raw exception in reports.
+            app_logger.error(f"{self.provider} AuthenticationError: API key is invalid or expired. Check GROQ_API_KEY in .env")
+            return self._generate_heuristic_report(log_entry, ml_result, severity_data, f"HEURISTIC FALLBACK ({self.provider} Auth Failed — Check API Key)")
+        except NotFoundError:
+            app_logger.error(f"{self.provider} NotFoundError: Model '{self.model}' not found. Check MODEL_NAME in .env")
+            return self._generate_heuristic_report(log_entry, ml_result, severity_data, f"HEURISTIC FALLBACK ({self.provider} Model Not Found)")
+        except RateLimitError:
+            app_logger.warning(f"{self.provider} RateLimitError: Rate limit hit. Falling back to heuristic report.")
+            return self._generate_heuristic_report(log_entry, ml_result, severity_data, f"HEURISTIC FALLBACK ({self.provider} Rate Limit)")
         except Exception as e:
             error_msg = str(e)
-            app_logger.error(f"OpenAI API Error during report compilation: {error_msg}")
-            
-            # Check for quota or billing issues to trigger fallback
+            app_logger.error(f"{self.provider} API Error during report compilation: {error_msg}")
             if "insufficient_quota" in error_msg or "billing" in error_msg or "quota" in error_msg:
-                app_logger.warning("Failing over to Heuristic Fallback report sequence due to OpenAI rate limits.")
-                return self._generate_heuristic_report(log_entry, ml_result, severity_data, "HEURISTIC FALLBACK (Quota Exceeded)")
-            
-            return f"# [ERROR] Incident Report\nCould not generate report: {error_msg}"
+                app_logger.warning(f"Quota/billing issue — falling back to heuristic report.")
+                return self._generate_heuristic_report(log_entry, ml_result, severity_data, f"HEURISTIC FALLBACK ({self.provider} Quota)")
+            return self._generate_heuristic_report(log_entry, ml_result, severity_data, f"HEURISTIC FALLBACK ({self.provider} Error)")
 
     def _generate_heuristic_report(self, log_entry: Dict, ml_result: Dict, severity_data: Dict, mode_label: str) -> str:
         """
