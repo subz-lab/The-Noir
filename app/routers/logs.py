@@ -147,10 +147,36 @@ async def bulk_ingest_logs(
             "last_analysis": results[-1] if results else None
         })
         
-    app_logger.info(f"Completed bulk ingestion of {len(results)} logs")
-        
     return {
         "status": "success",
         "processed": len(results),
         "last_analysis": results[-1] if results else None
     }
+
+
+# ─── Continuous Live Telemetry Streaming ──────────────────────────────────────
+
+@router.post("/stream/start")
+async def start_telemetry_stream(delay: float = 2.0):
+    """Starts continuous background generation and streaming of live security telemetry."""
+    from app.services.continuous_streamer import get_streamer_service
+    streamer = get_streamer_service()
+    streamer.start(delay=delay)
+    return {"status": "success", "message": "Continuous live telemetry stream started", "config": streamer.status()}
+
+
+@router.post("/stream/stop")
+async def stop_telemetry_stream():
+    """Stops the continuous live telemetry stream."""
+    from app.services.continuous_streamer import get_streamer_service
+    streamer = get_streamer_service()
+    streamer.stop()
+    return {"status": "success", "message": "Continuous telemetry stream stopped", "config": streamer.status()}
+
+
+@router.get("/stream/status")
+async def get_telemetry_stream_status():
+    """Returns the current state and metrics of the continuous telemetry stream."""
+    from app.services.continuous_streamer import get_streamer_service
+    streamer = get_streamer_service()
+    return {"status": "success", **streamer.status()}

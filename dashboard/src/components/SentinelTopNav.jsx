@@ -4,13 +4,48 @@ import {
     Shield, Search, Bell, ChevronDown, Command, Zap
 } from 'lucide-react';
 import ThreatLevelBanner from './ThreatLevelBanner';
+import { Radio, Play, Pause } from 'lucide-react';
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 /**
  * The Noir: SIH-Level Top Navigation
- * Features: Live UTC clock, threat level banner, notification count, user identity.
+ * Features: Live UTC clock, threat level banner, live continuous stream toggle, notification count, user identity.
  */
 const SentinelTopNav = ({ incidentCount = 0, alertCount = 0 }) => {
     const [time, setTime] = useState('');
+    const [isStreaming, setIsStreaming] = useState(true);
+    const [streamLoading, setStreamLoading] = useState(false);
+
+    useEffect(() => {
+        const checkStream = async () => {
+            try {
+                const res = await fetch(`${BASE_URL}/api/logs/stream/status`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setIsStreaming(data.is_running);
+                }
+            } catch {
+                // silent
+            }
+        };
+        checkStream();
+    }, []);
+
+    const toggleStream = async () => {
+        setStreamLoading(true);
+        try {
+            const endpoint = isStreaming ? '/api/logs/stream/stop' : '/api/logs/stream/start?delay=2.0';
+            const res = await fetch(`${BASE_URL}${endpoint}`, { method: 'POST' });
+            if (res.ok) {
+                setIsStreaming(!isStreaming);
+            }
+        } catch {
+            // silent
+        } finally {
+            setStreamLoading(false);
+        }
+    };
 
     useEffect(() => {
         const tick = () => {
@@ -77,6 +112,19 @@ const SentinelTopNav = ({ incidentCount = 0, alertCount = 0 }) => {
 
             {/* Right: Controls + User */}
             <div className="flex items-center gap-5">
+                {/* Continuous Telemetry Stream Toggle */}
+                <button
+                    onClick={toggleStream}
+                    disabled={streamLoading}
+                    title={isStreaming ? 'Click to Pause Continuous Ingestion' : 'Click to Start Continuous Ingestion'}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono text-[9px] font-bold uppercase tracking-wider transition-all ${isStreaming
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                        : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10'}`}
+                >
+                    <Radio className={`w-3 h-3 ${isStreaming ? 'animate-pulse text-emerald-400' : 'text-white/30'}`} />
+                    <span>{isStreaming ? 'Telemetry Stream Active' : 'Stream Paused'}</span>
+                </button>
+
                 {/* Live LLM Provider Status */}
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 font-mono text-[9px]">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />

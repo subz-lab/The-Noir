@@ -34,6 +34,26 @@ app.include_router(soar.router,       prefix="/api/soar",       tags=["SOAR"])
 # Agentic AI router — Gap 1
 app.include_router(agents.router,     prefix="/api/agents",     tags=["Agents"])
 
+@app.on_event("startup")
+async def startup_event():
+    """Auto-starts continuous live telemetry stream on backend launch."""
+    try:
+        from app.services.continuous_streamer import get_streamer_service
+        streamer = get_streamer_service()
+        streamer.start(delay=2.0)
+        app_logger.info("[Startup] Autonomous Continuous Telemetry Stream initialized & active")
+    except Exception as e:
+        app_logger.warning(f"[Startup] Failed to start continuous streamer: {e}")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Stops continuous background workers gracefully on shutdown."""
+    try:
+        from app.services.continuous_streamer import get_streamer_service
+        get_streamer_service().stop()
+    except Exception:
+        pass
+
 @app.get("/")
 async def root():
     return {
