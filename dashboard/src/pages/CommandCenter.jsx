@@ -59,7 +59,7 @@ const CommandCenter = ({ incidents = [], logs = [] }) => {
                 <div className="flex items-center gap-3 mb-5">
                     <div className="h-[1px] flex-1 bg-white/5" />
                     <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white/20 font-mono">
-                        Live Telemetry
+                        Global Telemetry & Real-Time KPIs
                     </span>
                     <div className="h-[1px] flex-1 bg-white/5" />
                 </div>
@@ -78,7 +78,7 @@ const CommandCenter = ({ incidents = [], logs = [] }) => {
                     <LiveKPICard
                         label="Blocked Attacks"
                         value={kpiData.blocked.value}
-                        sublabel="Today total"
+                        sublabel="Automated Containment"
                         delta="+347 vs yesterday"
                         deltaPositive={true}
                         severity="success"
@@ -87,10 +87,10 @@ const CommandCenter = ({ incidents = [], logs = [] }) => {
                         delay={0.08}
                     />
                     <LiveKPICard
-                        label="Avg Response"
+                        label="Avg Latency"
                         value="0.82"
                         unit="ms"
-                        sublabel="Neural speed"
+                        sublabel="Neural Speed"
                         delta="-0.03ms"
                         deltaPositive={true}
                         severity="medium"
@@ -102,7 +102,7 @@ const CommandCenter = ({ incidents = [], logs = [] }) => {
                         label="System Uptime"
                         value={99.97}
                         unit="%"
-                        sublabel="All nodes healthy"
+                        sublabel="All Nodes Operational"
                         severity="success"
                         sparkData={kpiData.uptime.spark}
                         icon={Activity}
@@ -111,20 +111,17 @@ const CommandCenter = ({ incidents = [], logs = [] }) => {
                 </div>
             </section>
 
-            {/* ── Row 2: Cinematic Parallax Hero ── */}
-            <SentinelParallaxHero />
-
-            {/* ── Row 3: Live Attack Stream + Threat Graph ── */}
+            {/* ── Row 2: Live Attack Stream + Threat Graph ── */}
             <div className="grid grid-cols-12 gap-6">
                 <div className="col-span-12 xl:col-span-8">
-                    <GlassPanel title="Live Attack Stream" badge="LIVE" badgeColor="#10B981">
+                    <GlassPanel title="Live Adversary Stream & Telemetry" badge="LIVE FEED" badgeColor="#10B981">
                         <div className="h-[360px]">
                             <LiveAttackStream logs={logs} />
                         </div>
                     </GlassPanel>
                 </div>
                 <div className="col-span-12 xl:col-span-4">
-                    <GlassPanel title="Neural Threat Graph" badge="24H" badgeColor="#2563EB">
+                    <GlassPanel title="24H Neural Attack Volume" badge="AGGREGATED" badgeColor="#2563EB">
                         <div className="h-[360px]">
                             <NeuralThreatGraph logs={logs} />
                         </div>
@@ -132,17 +129,20 @@ const CommandCenter = ({ incidents = [], logs = [] }) => {
                 </div>
             </div>
 
-            {/* ── Row 4: AI Timeline + Automation Brain ── */}
+            {/* ── Row 3: Cinematic Parallax Centerpiece ── */}
+            <SentinelParallaxHero />
+
+            {/* ── Row 4: AI Forensic Timeline + Automation Brain ── */}
             <div className="grid grid-cols-12 gap-6">
                 <div className="col-span-12 xl:col-span-6">
-                    <GlassPanel title="AI Forensic Timeline" badge="AUTO" badgeColor="#F59E0B">
+                    <GlassPanel title="AI Forensic Sequence" badge="AUTONOMOUS" badgeColor="#F59E0B">
                         <div className="h-[320px]">
                             <AIThreatTimeline />
                         </div>
                     </GlassPanel>
                 </div>
                 <div className="col-span-12 xl:col-span-6">
-                    <GlassPanel title="Automation Brain" badge="NEURAL" badgeColor="#2563EB">
+                    <GlassPanel title="Neural Automation Topology" badge="NEURAL MAP" badgeColor="#2563EB">
                         <div className="h-[320px]">
                             <AutomationBrain />
                         </div>
@@ -151,8 +151,8 @@ const CommandCenter = ({ incidents = [], logs = [] }) => {
             </div>
 
             {/* ── Row 5: System Health ── */}
-            <GlassPanel title="Platform Power Density" badge="METRICS" badgeColor="#2563EB">
-                <div className="h-[380px]">
+            <GlassPanel title="Hardware & Network Power Density" badge="TELEMETRY" badgeColor="#2563EB">
+                <div className="h-[360px]">
                     <SystemHealth />
                 </div>
             </GlassPanel>
