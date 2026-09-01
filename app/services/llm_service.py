@@ -38,6 +38,15 @@ class LLMService:
 
         self.sql_pattern = r"(?i)(OR\s+['\"]?\d|DROP\s+TABLE|UNION\s+SELECT|--|admin['\"]--|SELECT\s+\*\s+FROM|' OR '1'='1|' OR 'a'='a)"
 
+    def get_provider_status(self) -> Dict[str, Any]:
+        """Returns the active LLM provider, configured model, and mode."""
+        return {
+            "provider": self.provider,
+            "model": self.model,
+            "is_live": bool(self.client),
+            "mode": "Live LLM Inference" if self.client else "Heuristic Fallback",
+        }
+
     def calculate_severity(self, ml_result: Dict, log_entry: Dict) -> Dict[str, Any]:
         """
         Calculates granular severity metrics.

@@ -77,10 +77,12 @@ const SentinelTopNav = ({ incidentCount = 0, alertCount = 0 }) => {
 
             {/* Right: Controls + User */}
             <div className="flex items-center gap-5">
-                {/* Environment */}
-                <div className="flex items-center gap-1 bg-white/5 border border-white/10 p-1 rounded-xl">
-                    <button className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white bg-white/10 shadow-lg">Production</button>
-                    <button className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white/30 hover:text-white/60 transition-colors">Staging</button>
+                {/* Live LLM Provider Status */}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 font-mono text-[9px]">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+                    <span className="font-bold text-white/80 uppercase tracking-wider">Groq</span>
+                    <span className="text-white/30">·</span>
+                    <span className="text-emerald-400/90 font-medium">groq/compound</span>
                 </div>
 
                 <div className="h-6 w-[1px] bg-white/5" />

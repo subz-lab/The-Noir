@@ -31,6 +31,12 @@ class ProcessLogsRequest(BaseModel):
     generate_reports: bool = True
 
 
+class AnalystFeedbackRequest(BaseModel):
+    incident_id: str
+    verdict: str                           # 'true_positive' | 'false_positive'
+    notes: Optional[str] = None
+
+
 # ──────────────────────────────────────────────────────────────────────────── #
 #  Endpoints                                                                    #
 # ──────────────────────────────────────────────────────────────────────────── #
@@ -111,3 +117,29 @@ async def get_agent_activity():
     """
     orchestrator = get_orchestrator()
     return orchestrator.get_agent_activity()
+
+
+@router.post("/feedback")
+async def submit_analyst_feedback(request: AnalystFeedbackRequest):
+    """
+    Records human-in-the-loop analyst feedback (True/False Positive).
+    Dynamically adjusts incident severity status and records feedback metrics.
+    """
+    corr = get_correlation_service()
+    success = corr.record_feedback(
+        incident_id=request.incident_id,
+        verdict=request.verdict,
+        notes=request.notes,
+    )
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Incident '{request.incident_id}' not found")
+    return {"status": "success", "incident_id": request.incident_id, "verdict": request.verdict}
+
+
+@router.get("/feedback/stats")
+async def get_feedback_statistics():
+    """
+    Returns aggregate analyst feedback statistics (total reviews, TP, FP, accuracy ratio).
+    """
+    corr = get_correlation_service()
+    return corr.get_feedback_stats()
