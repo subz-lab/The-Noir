@@ -192,7 +192,7 @@ class ContinuousTelemetryStreamer:
                 # 6. Auto-trigger SOAR for high severity threats
                 if prediction.get("severity_index", 0) > 0:
                     self._threats_streamed += 1
-                    asyncio.create_task(soar_service.check_and_trigger_playbooks(enriched))
+                    soar_service.check_and_trigger_playbooks(enriched)
 
                 self._total_streamed += 1
 
